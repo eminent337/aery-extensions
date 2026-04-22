@@ -10,9 +10,11 @@ const REGISTRY_URL = "https://raw.githubusercontent.com/eminent337/aery-extensio
 interface Pack {
 	description: string;
 	source: string;
-	extensions: string[];
+	install?: string;
+	extensions?: string[];
 	auto?: boolean;
 	coming_soon?: boolean;
+	type?: "extension" | "skills" | "bundle";
 }
 
 interface Registry {
@@ -42,21 +44,22 @@ export default function (pi: ExtensionAPI) {
 				return;
 			}
 
-			// Build options — exclude auto-installed core pack
 			const packs = Object.entries(registry.packs).filter(([, p]) => !p.auto);
 			const options = packs.map(([name, pack]) => {
-				const status = pack.coming_soon ? " [coming soon]" : ` (${pack.extensions.length} extensions)`;
-				return `${name}${status} — ${pack.description}`;
+				if (pack.coming_soon) return `${name} [coming soon] — ${pack.description}`;
+				const tag = pack.type === "skills" ? "[skills]" : pack.type === "bundle" ? "[bundle]" : "[extension]";
+				const count = pack.extensions?.length ? ` (${pack.extensions.length})` : "";
+				return `${name}${count} ${tag} — ${pack.description}`;
 			});
 			options.push("─────────────────────────────────────────");
-			options.push("List installed extensions");
+			options.push("List installed packages");
 
 			const choice = await ctx.ui.select("Aery Marketplace — Select a pack to install", options);
 			if (!choice) return;
 
 			if (choice.includes("List installed")) {
 				const result = await pi.exec("aery", ["list"]);
-				pi.sendUserMessage(`Installed extensions:\n\n${result.stdout || "None"}`);
+				pi.sendUserMessage(`Installed packages:\n\n${result.stdout || "None"}`);
 				return;
 			}
 
@@ -70,13 +73,14 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			const confirm = await ctx.ui.select(
-				`Install "${packName}" pack? (${pack.extensions.length} extensions)`,
+				`Install "${packName}"?\n${pack.description}`,
 				["Yes, install", "Cancel"]
 			);
 			if (!confirm || confirm === "Cancel") return;
 
-			ctx.ui.notify(`Installing ${packName} pack...`, "info");
-			const result = await pi.exec("aery", ["install", pack.source]);
+			ctx.ui.notify(`Installing ${packName}...`, "info");
+			const installUrl = pack.install || `https://github.com/${pack.source}`;
+			const result = await pi.exec("aery", ["install", installUrl]);
 			if (result.code === 0) {
 				ctx.ui.notify(`✓ ${packName} installed! Restart aery to activate.`, "info");
 			} else {

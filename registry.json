@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "packs": {
     "core": {
       "description": "Essential extensions — auto-installed with Aery",
@@ -8,9 +8,52 @@
       "source": "eminent337/aery-extensions/core"
     },
     "full": {
-      "description": "All 27 extensions — multi-agent, loop, session memory, and more",
+      "description": "All 27 Aery extensions — multi-agent, loop, session memory, and more",
       "extensions": ["multi-agent","agent-chain","agent-teams","loop","worktree","todo-manager","cross-agent","session-timeline","checkpoint","operational-learning","user-model","skill-watcher","skill-autocreate","health"],
       "source": "eminent337/aery-extensions/packs/full"
+    },
+    "pi-skills": {
+      "description": "Official pi-skills — Brave search, browser automation, Gmail, Google Calendar/Drive, transcription, VS Code, YouTube transcripts",
+      "extensions": ["brave-search","browser-tools","gccli","gdcli","gmcli","transcribe","vscode","youtube-transcript"],
+      "source": "badlogic/pi-skills",
+      "install": "https://github.com/badlogic/pi-skills",
+      "type": "skills"
+    },
+    "interactive-shell": {
+      "description": "Full PTY shell overlay — lets Aery autonomously control interactive CLIs (vim, python REPL, etc). User can take over anytime.",
+      "source": "nicobailon/pi-interactive-shell",
+      "install": "https://github.com/nicobailon/pi-interactive-shell",
+      "type": "extension"
+    },
+    "model-switch": {
+      "description": "Lets the agent switch models on its own mid-task",
+      "source": "nicobailon/pi-model-switch",
+      "install": "https://github.com/nicobailon/pi-model-switch",
+      "type": "extension"
+    },
+    "memory": {
+      "description": "Plain-Markdown memory system — persistent notes across sessions",
+      "source": "jo-inc/pi-mem",
+      "install": "https://github.com/jo-inc/pi-mem",
+      "type": "extension"
+    },
+    "hashline-edit": {
+      "description": "Content-anchored line references for read/grep/edit tools — more token efficient",
+      "source": "RimuruW/pi-hashline-edit",
+      "install": "https://github.com/RimuruW/pi-hashline-edit",
+      "type": "extension"
+    },
+    "rtk": {
+      "description": "Routes bash commands through rtk for LLM token savings",
+      "source": "sherif-fanous/pi-rtk",
+      "install": "https://github.com/sherif-fanous/pi-rtk",
+      "type": "extension"
+    },
+    "oh-aery": {
+      "description": "One-click setup — extensions, themes, prompts, skills, and ant-colony swarm. Like oh-my-zsh for Aery.",
+      "source": "ifiokjr/oh-pi",
+      "install": "https://github.com/ifiokjr/oh-pi",
+      "type": "bundle"
     },
     "geospatial": {
       "description": "Geospatial tools — GDAL, coordinate systems, GIS workflows",

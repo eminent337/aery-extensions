@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "packs": {
+    "core": {
+      "description": "Essential extensions — auto-installed with Aery",
+      "auto": true,
+      "extensions": ["auto-compact","damage-control","provider-profiles","model-failover","web-search","web-fetch","commands","hooks","circuit-breaker","auto-router","memory-include","aery-header","aery-footer"],
+      "source": "eminent337/aery-extensions/core"
+    },
+    "full": {
+      "description": "All 27 extensions — multi-agent, loop scheduler, session memory, and more",
+      "extensions": ["multi-agent","agent-chain","agent-teams","loop","worktree","todo-manager","cross-agent","session-timeline","checkpoint","operational-learning","user-model","skill-watcher","skill-autocreate","health"],
+      "source": "eminent337/aery-extensions/packs/full"
+    },
+    "geospatial": {
+      "description": "Geospatial tools — GDAL, coordinate systems, GIS workflows",
+      "extensions": [],
+      "source": "eminent337/aery-extensions/packs/geospatial",
+      "coming_soon": true
+    },
+    "data-science": {
+      "description": "Data science tools — Jupyter, pandas, numpy, visualization helpers",
+      "extensions": [],
+      "source": "eminent337/aery-extensions/packs/data-science",
+      "coming_soon": true
+    }
+  }
+}

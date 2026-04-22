@@ -1,8 +1,8 @@
 # Aery Extensions
 
-Extension packs for [Aery](https://github.com/eminent337/aery).
+Extension packs for [Aery](https://github.com/eminent337/aery) — AI coding agent for the terminal.
 
-## Install via marketplace
+## Browse & Install
 
 ```bash
 aery
@@ -13,7 +13,6 @@ aery
 
 ```bash
 aery install eminent337/aery-extensions/packs/full
-aery install eminent337/aery-extensions/packs/geospatial
 ```
 
 ## Packs
@@ -22,5 +21,5 @@ aery install eminent337/aery-extensions/packs/geospatial
 |------|-------------|--------|
 | `core` | Essential extensions (auto-installed) | ✅ |
 | `full` | All 27 extensions | ✅ |
-| `geospatial` | GDAL, GIS tools | 🔜 |
-| `data-science` | Jupyter, pandas helpers | 🔜 |
+| `geospatial` | GDAL, GIS tools | 🔜 Coming soon |
+| `data-science` | Jupyter, pandas helpers | 🔜 Coming soon |

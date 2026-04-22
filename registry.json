@@ -8,7 +8,7 @@
       "source": "eminent337/aery-extensions/core"
     },
     "full": {
-      "description": "All 27 extensions — multi-agent, loop scheduler, session memory, and more",
+      "description": "All 27 extensions — multi-agent, loop, session memory, and more",
       "extensions": ["multi-agent","agent-chain","agent-teams","loop","worktree","todo-manager","cross-agent","session-timeline","checkpoint","operational-learning","user-model","skill-watcher","skill-autocreate","health"],
       "source": "eminent337/aery-extensions/packs/full"
     },
@@ -19,7 +19,7 @@
       "coming_soon": true
     },
     "data-science": {
-      "description": "Data science tools — Jupyter, pandas, numpy, visualization helpers",
+      "description": "Data science tools — Jupyter, pandas, numpy helpers",
       "extensions": [],
       "source": "eminent337/aery-extensions/packs/data-science",
       "coming_soon": true

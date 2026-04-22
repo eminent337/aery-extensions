@@ -2,25 +2,63 @@
   "version": "1.1.0",
   "packs": {
     "core": {
-      "description": "Essential extensions — auto-installed with Aery",
+      "description": "Essential extensions \u2014 auto-installed with Aery",
       "auto": true,
-      "extensions": ["auto-compact","damage-control","provider-profiles","model-failover","web-search","web-fetch","commands","hooks","circuit-breaker","auto-router","memory-include","aery-header","aery-footer"],
+      "extensions": [
+        "auto-compact",
+        "damage-control",
+        "provider-profiles",
+        "model-failover",
+        "web-search",
+        "web-fetch",
+        "commands",
+        "hooks",
+        "circuit-breaker",
+        "auto-router",
+        "memory-include",
+        "aery-header",
+        "aery-footer",
+        "multi-agent",
+        "agent-chain",
+        "agent-teams"
+      ],
       "source": "eminent337/aery-extensions/core"
     },
     "full": {
-      "description": "All 27 Aery extensions — multi-agent, loop, session memory, and more",
-      "extensions": ["multi-agent","agent-chain","agent-teams","loop","worktree","todo-manager","cross-agent","session-timeline","checkpoint","operational-learning","user-model","skill-watcher","skill-autocreate","health"],
+      "description": "All 27 Aery extensions \u2014 multi-agent, loop, session memory, and more",
+      "extensions": [
+        "loop",
+        "worktree",
+        "todo-manager",
+        "cross-agent",
+        "session-timeline",
+        "checkpoint",
+        "operational-learning",
+        "user-model",
+        "skill-watcher",
+        "skill-autocreate",
+        "health"
+      ],
       "source": "eminent337/aery-extensions/packs/full"
     },
     "pi-skills": {
-      "description": "Official pi-skills — Brave search, browser automation, Gmail, Google Calendar/Drive, transcription, VS Code, YouTube transcripts",
-      "extensions": ["brave-search","browser-tools","gccli","gdcli","gmcli","transcribe","vscode","youtube-transcript"],
+      "description": "Official pi-skills \u2014 Brave search, browser automation, Gmail, Google Calendar/Drive, transcription, VS Code, YouTube transcripts",
+      "extensions": [
+        "brave-search",
+        "browser-tools",
+        "gccli",
+        "gdcli",
+        "gmcli",
+        "transcribe",
+        "vscode",
+        "youtube-transcript"
+      ],
       "source": "badlogic/pi-skills",
       "install": "https://github.com/badlogic/pi-skills",
       "type": "skills"
     },
     "interactive-shell": {
-      "description": "Full PTY shell overlay — lets Aery autonomously control interactive CLIs (vim, python REPL, etc). User can take over anytime.",
+      "description": "Full PTY shell overlay \u2014 lets Aery autonomously control interactive CLIs (vim, python REPL, etc). User can take over anytime.",
       "source": "nicobailon/pi-interactive-shell",
       "install": "https://github.com/nicobailon/pi-interactive-shell",
       "type": "extension"
@@ -32,13 +70,13 @@
       "type": "extension"
     },
     "memory": {
-      "description": "Plain-Markdown memory system — persistent notes across sessions",
+      "description": "Plain-Markdown memory system \u2014 persistent notes across sessions",
       "source": "jo-inc/pi-mem",
       "install": "https://github.com/jo-inc/pi-mem",
       "type": "extension"
     },
     "hashline-edit": {
-      "description": "Content-anchored line references for read/grep/edit tools — more token efficient",
+      "description": "Content-anchored line references for read/grep/edit tools \u2014 more token efficient",
       "source": "RimuruW/pi-hashline-edit",
       "install": "https://github.com/RimuruW/pi-hashline-edit",
       "type": "extension"
@@ -50,19 +88,19 @@
       "type": "extension"
     },
     "oh-aery": {
-      "description": "One-click setup — extensions, themes, prompts, skills, and ant-colony swarm. Like oh-my-zsh for Aery.",
+      "description": "One-click setup \u2014 extensions, themes, prompts, skills, and ant-colony swarm. Like oh-my-zsh for Aery.",
       "source": "ifiokjr/oh-pi",
       "install": "https://github.com/ifiokjr/oh-pi",
       "type": "bundle"
     },
     "geospatial": {
-      "description": "Geospatial tools — GDAL, coordinate systems, GIS workflows",
+      "description": "Geospatial tools \u2014 GDAL, coordinate systems, GIS workflows",
       "extensions": [],
       "source": "eminent337/aery-extensions/packs/geospatial",
       "coming_soon": true
     },
     "data-science": {
-      "description": "Data science tools — Jupyter, pandas, numpy helpers",
+      "description": "Data science tools \u2014 Jupyter, pandas, numpy helpers",
       "extensions": [],
       "source": "eminent337/aery-extensions/packs/data-science",
       "coming_soon": true

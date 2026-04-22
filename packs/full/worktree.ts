@@ -31,7 +31,7 @@ export default function (pi: ExtensionAPI) {
 
 			// Check git
 			const gitRoot = run("git rev-parse --show-toplevel", cwd);
-			if (!gitRoot.ok) return { content: [{ type: "text" as const, text: "Not a git repository." }], details: {} };
+			if (!gitRoot.ok) return { content: [{ type: "text" as const, text: `Not a git repository. Run aery from inside a project directory (current: ${cwd}).` }], details: {} };
 
 			const root = gitRoot.out;
 			const name = params.name ?? `wt-${Date.now().toString(36)}`;
@@ -80,7 +80,7 @@ export default function (pi: ExtensionAPI) {
 		async execute(_id, params, _signal, onUpdate) {
 			const cwd = process.cwd();
 			const gitRoot = run("git rev-parse --show-toplevel", cwd);
-			if (!gitRoot.ok) return { content: [{ type: "text" as const, text: "Not a git repository." }], details: {} };
+			if (!gitRoot.ok) return { content: [{ type: "text" as const, text: `Not a git repository. Run aery from inside a project directory (current: ${cwd}).` }], details: {} };
 
 			const root = gitRoot.out;
 

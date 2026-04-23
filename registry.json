@@ -20,7 +20,9 @@
         "aery-footer",
         "multi-agent",
         "agent-chain",
-        "agent-teams"
+        "agent-teams",
+        "help",
+        "default-agents"
       ],
       "source": "eminent337/aery-extensions/core"
     },

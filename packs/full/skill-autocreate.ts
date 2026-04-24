@@ -41,11 +41,6 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	pi.on("tool_result", async (event) => {
-		// Track failures
-		if ((event as any).isError || (event as any).result?.isError) {
-			hadFailure = true;
-			toolErrorCount++;
-		}
 		// Track bash failures (non-zero exit)
 		if (event.toolName === "bash") {
 			const output = JSON.stringify((event as any).result || "");
@@ -60,9 +55,7 @@ export default function (pi: ExtensionAPI) {
 		// Skip conversational/trivial prompts
 		if (/^(what|who|how|why|when|where|tell me|show me|explain|hi|hello|yes|no|okay|good|thanks|what was|what is|what are)/i.test(taskPrompt)) return;
 
-		const shouldSave =
-			(hadFailure && toolErrorCount >= 1) ||  // fixed a failure
-			(turnCount >= 5 && hadFailure);           // complex problem that needed retries
+		const shouldSave = turnCount >= 5 && hadFailure; // complex problem that needed retries
 
 		if (!shouldSave) return;
 

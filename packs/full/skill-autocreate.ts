@@ -27,14 +27,12 @@ export default function (pi: ExtensionAPI) {
 	let taskPrompt = "";
 	let turnCount = 0;
 	let hadFailure = false;
-	let usedWebSearch = false;
 	let toolErrorCount = 0;
 
 	pi.on("before_agent_start", async (event) => {
 		taskPrompt = event.prompt?.slice(0, 150) || "";
 		turnCount = 0;
 		hadFailure = false;
-		usedWebSearch = false;
 		toolErrorCount = 0;
 	});
 
@@ -47,10 +45,6 @@ export default function (pi: ExtensionAPI) {
 		if ((event as any).isError || (event as any).result?.isError) {
 			hadFailure = true;
 			toolErrorCount++;
-		}
-		// Track web search usage
-		if (event.toolName === "web_search" || event.toolName === "web_fetch") {
-			usedWebSearch = true;
 		}
 		// Track bash failures (non-zero exit)
 		if (event.toolName === "bash") {
@@ -68,7 +62,6 @@ export default function (pi: ExtensionAPI) {
 
 		const shouldSave =
 			(hadFailure && toolErrorCount >= 1) ||  // fixed a failure
-			usedWebSearch ||                          // acquired web knowledge
 			(turnCount >= 5 && hadFailure);           // complex problem that needed retries
 
 		if (!shouldSave) return;
@@ -89,9 +82,7 @@ export default function (pi: ExtensionAPI) {
 		const filename = `${slug}-${Date.now()}.md`;
 		const path = join(SKILLS_DIR, filename);
 
-		const reason = usedWebSearch
-			? "web search knowledge acquired"
-			: hadFailure
+		const reason = hadFailure
 			? `fixed after ${toolErrorCount} failure(s)`
 			: `complex task (${turnCount} turns)`;
 

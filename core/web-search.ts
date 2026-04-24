@@ -5,6 +5,7 @@
  */
 
 import type { ExtensionAPI } from "@eminent337/aery";
+import { Text } from "@eminent337/aery-tui";
 import { Type } from "@sinclair/typebox";
 
 interface SearchResult { title: string; url: string; snippet: string; }
@@ -123,6 +124,20 @@ export default function (pi: ExtensionAPI) {
 		parameters: Type.Object({
 			query: Type.String({ description: "Search query" }),
 		}),
+		renderResult(result, options, theme) {
+			if (!result?.content) return new Text("Search complete", 0, 0);
+			const details = result.details as any;
+			if (result.isError) return new Text(theme.fg("toolOutput", "Search failed"), 0, 0);
+			if (!options.expanded) {
+				const summary = details?.count
+					? `Found ${details.count} results via ${details.provider ?? "search"}`
+					: "Search complete";
+				return new Text(theme.fg("toolOutput", summary), 0, 0);
+			}
+			// Expanded: show full results
+			const text = result.content.find((c: any) => c.type === "text")?.text ?? "";
+			return new Text(theme.fg("toolOutput", text), 0, 0);
+		},
 		async execute(_id, params, signal, onUpdate) {
 			onUpdate?.({ content: [{ type: "text", text: `Searching: ${params.query}` }], details: {} });
 

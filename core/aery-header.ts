@@ -3,12 +3,9 @@ import { VERSION } from "@eminent337/aery";
 import { truncateToWidth } from "@eminent337/aery-tui";
 
 const LOGO = [
-	" █████╗ ███████╗██████╗ ██╗   ██╗",
-	"██╔══██╗██╔════╝██╔══██╗╚██╗ ██╔╝",
-	"███████║█████╗  ██████╔╝ ╚████╔╝ ",
-	"██╔══██║██╔══╝  ██╔══██╗  ╚██╔╝  ",
-	"██║  ██║███████╗██║  ██║   ██║   ",
-	"╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝   ╚═╝  ",
+	"╔═╗╔═╗╦═╗╦ ╦",
+	"╠═╣║╣ ╠╦╝╚╦╝",
+	"╩ ╩╚═╝╩╚═ ╩ ",
 ];
 
 export default function (pi: ExtensionAPI) {
@@ -20,19 +17,17 @@ export default function (pi: ExtensionAPI) {
 			render(width: number): string[] {
 				const lines: string[] = [];
 
-				// Logo lines in sky blue
+				// Logo lines in sky blue, centered
+				const logoWidth = 14; // width of the 3-line logo
 				for (const line of LOGO) {
-					lines.push(truncateToWidth(theme.fg("accent", line), width));
+					const pad = Math.max(0, Math.floor((width - logoWidth) / 2));
+					lines.push(" ".repeat(pad) + theme.fg("accent", line));
 				}
 
-				// Version line
-				lines.push(
-					truncateToWidth(
-						theme.fg("dim", "  AI coding agent · ") +
-						theme.fg("muted", `v${VERSION}`),
-						width
-					)
-				);
+				// Version line, centered
+				const versionText = `AI coding agent · v${VERSION}`;
+				const vpad = Math.max(0, Math.floor((width - versionText.length) / 2));
+				lines.push(" ".repeat(vpad) + theme.fg("dim", versionText));
 
 				// Separator
 				lines.push(theme.fg("borderMuted", "─".repeat(width)));

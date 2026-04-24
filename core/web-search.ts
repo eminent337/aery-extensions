@@ -1,54 +1,56 @@
 /**
- * Aery Web Search Tool (Phase 1.4)
- * Multi-provider search: DuckDuckGo (free default), Tavily, Exa, Brave.
+ * Aery Web Search Tool
+ * Providers: firecrawl, tavily, exa, jina, brave, duckduckgo (auto fallback chain)
+ * Control via WEB_SEARCH_PROVIDER env var (auto|firecrawl|tavily|exa|jina|brave|ddg)
  */
 
 import type { ExtensionAPI } from "@eminent337/aery";
 import { Type } from "@sinclair/typebox";
 
-interface SearchResult {
-	title: string;
-	url: string;
-	snippet: string;
-}
+interface SearchResult { title: string; url: string; snippet: string; }
 
-async function searchDuckDuckGo(query: string, signal: AbortSignal): Promise<SearchResult[]> {
-	// DuckDuckGo HTML search (no API key needed)
-	const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-	const res = await fetch(url, {
-		signal,
-		headers: { "User-Agent": "Mozilla/5.0 (compatible; Aery/1.0)" },
+async function searchFirecrawl(query: string, signal: AbortSignal): Promise<SearchResult[]> {
+	const res = await fetch("https://api.firecrawl.dev/v1/search", {
+		method: "POST", signal,
+		headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.FIRECRAWL_API_KEY}` },
+		body: JSON.stringify({ query, limit: 8 }),
 	});
-	const html = await res.text();
-
-	const results: SearchResult[] = [];
-	// Parse result blocks from DDG HTML
-	const blockRegex = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
-	let match;
-	while ((match = blockRegex.exec(html)) !== null && results.length < 8) {
-		let rawUrl = match[1];
-		// Strip DDG tracking params (&rut=...)
-		rawUrl = rawUrl.split("&rut=")[0].split("&amp;rut=")[0];
-		rawUrl = rawUrl.replace(/^\/\/duckduckgo\.com\/l\/\?uddg=/, "");
-		const url = decodeURIComponent(rawUrl);
-		const title = match[2].replace(/<[^>]+>/g, "").trim();
-		const snippet = match[3].replace(/<[^>]+>/g, "").trim();
-		if (title && url.startsWith("http")) {
-			results.push({ title, url, snippet });
-		}
-	}
-	return results;
+	if (!res.ok) throw new Error(`Firecrawl ${res.status}`);
+	const data = await res.json() as any;
+	return (data.data ?? []).map((r: any) => ({ title: r.title ?? r.url, url: r.url, snippet: r.description ?? "" }));
 }
 
 async function searchTavily(query: string, signal: AbortSignal): Promise<SearchResult[]> {
 	const res = await fetch("https://api.tavily.com/search", {
-		method: "POST",
-		signal,
+		method: "POST", signal,
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({ api_key: process.env.TAVILY_API_KEY, query, max_results: 8 }),
 	});
+	if (!res.ok) throw new Error(`Tavily ${res.status}`);
 	const data = await res.json() as any;
 	return (data.results ?? []).map((r: any) => ({ title: r.title, url: r.url, snippet: r.content ?? "" }));
+}
+
+async function searchExa(query: string, signal: AbortSignal): Promise<SearchResult[]> {
+	const res = await fetch("https://api.exa.ai/search", {
+		method: "POST", signal,
+		headers: { "Content-Type": "application/json", "x-api-key": process.env.EXA_API_KEY! },
+		body: JSON.stringify({ query, numResults: 8, useAutoprompt: true }),
+	});
+	if (!res.ok) throw new Error(`Exa ${res.status}`);
+	const data = await res.json() as any;
+	return (data.results ?? []).map((r: any) => ({ title: r.title, url: r.url, snippet: r.text?.slice(0, 200) ?? "" }));
+}
+
+async function searchJina(query: string, signal: AbortSignal): Promise<SearchResult[]> {
+	const url = `https://s.jina.ai/?q=${encodeURIComponent(query)}&count=8`;
+	const res = await fetch(url, {
+		signal,
+		headers: { "Authorization": `Bearer ${process.env.JINA_API_KEY}`, "Accept": "application/json" },
+	});
+	if (!res.ok) throw new Error(`Jina ${res.status}`);
+	const data = await res.json() as any;
+	return (data.data ?? data.results ?? []).map((r: any) => ({ title: r.title ?? "", url: r.url ?? "", snippet: r.description ?? r.snippet ?? "" }));
 }
 
 async function searchBrave(query: string, signal: AbortSignal): Promise<SearchResult[]> {
@@ -56,19 +58,45 @@ async function searchBrave(query: string, signal: AbortSignal): Promise<SearchRe
 		signal,
 		headers: { "Accept": "application/json", "X-Subscription-Token": process.env.BRAVE_API_KEY! },
 	});
+	if (!res.ok) throw new Error(`Brave ${res.status}`);
 	const data = await res.json() as any;
 	return (data.web?.results ?? []).map((r: any) => ({ title: r.title, url: r.url, snippet: r.description ?? "" }));
 }
 
-async function searchExa(query: string, signal: AbortSignal): Promise<SearchResult[]> {
-	const res = await fetch("https://api.exa.ai/search", {
-		method: "POST",
-		signal,
-		headers: { "Content-Type": "application/json", "x-api-key": process.env.EXA_API_KEY! },
-		body: JSON.stringify({ query, numResults: 8, useAutoprompt: true }),
+async function searchDuckDuckGo(query: string, signal: AbortSignal): Promise<SearchResult[]> {
+	const res = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
+		signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; Aery/1.0)" },
 	});
-	const data = await res.json() as any;
-	return (data.results ?? []).map((r: any) => ({ title: r.title, url: r.url, snippet: r.text?.slice(0, 200) ?? "" }));
+	const html = await res.text();
+	const results: SearchResult[] = [];
+	const rx = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
+	let m;
+	while ((m = rx.exec(html)) !== null && results.length < 8) {
+		let rawUrl = m[1].split("&rut=")[0].split("&amp;rut=")[0].replace(/^\/\/duckduckgo\.com\/l\/\?uddg=/, "");
+		const url = decodeURIComponent(rawUrl);
+		const title = m[2].replace(/<[^>]+>/g, "").trim();
+		const snippet = m[3].replace(/<[^>]+>/g, "").trim();
+		if (title && url.startsWith("http")) results.push({ title, url, snippet });
+	}
+	return results;
+}
+
+type Provider = { name: string; key: string | undefined; fn: (q: string, s: AbortSignal) => Promise<SearchResult[]> };
+
+const PROVIDERS: Provider[] = [
+	{ name: "firecrawl", key: process.env.FIRECRAWL_API_KEY, fn: searchFirecrawl },
+	{ name: "tavily",    key: process.env.TAVILY_API_KEY,    fn: searchTavily },
+	{ name: "exa",       key: process.env.EXA_API_KEY,       fn: searchExa },
+	{ name: "jina",      key: process.env.JINA_API_KEY,      fn: searchJina },
+	{ name: "brave",     key: process.env.BRAVE_API_KEY,     fn: searchBrave },
+	{ name: "ddg",       key: "free",                        fn: searchDuckDuckGo },
+];
+
+function getChain(): Provider[] {
+	const mode = process.env.WEB_SEARCH_PROVIDER ?? "auto";
+	if (mode === "auto") return PROVIDERS.filter(p => p.key);
+	const p = PROVIDERS.find(p => p.name === mode);
+	return p ? [p] : PROVIDERS.filter(p => p.key);
 }
 
 function formatResults(results: SearchResult[], query: string): string {
@@ -79,41 +107,29 @@ function formatResults(results: SearchResult[], query: string): string {
 export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "web_search",
-		description: "Search the web and return results with titles, URLs, and snippets.",
+		description: "Search the web. Providers auto-selected by priority (firecrawl > tavily > exa > jina > brave > duckduckgo). Control with WEB_SEARCH_PROVIDER env var.",
 		parameters: Type.Object({
 			query: Type.String({ description: "Search query" }),
-			provider: Type.Optional(Type.String({ description: "Provider: duckduckgo (default), tavily, brave, exa" })),
 		}),
 		async execute(_id, params, signal, onUpdate) {
-			const preferred = params.provider ??
-				(process.env.TAVILY_API_KEY ? "tavily" :
-				process.env.BRAVE_API_KEY ? "brave" :
-				process.env.EXA_API_KEY ? "exa" : "duckduckgo");
-
 			onUpdate?.({ content: [{ type: "text", text: `Searching: ${params.query}` }], details: {} });
 
-			// Fallback chain: try preferred first, then others, then duckduckgo
-			const chain: Array<() => Promise<SearchResult[]>> = [];
-			if (preferred === "tavily" && process.env.TAVILY_API_KEY) chain.push(() => searchTavily(params.query, signal));
-			if (preferred === "brave" && process.env.BRAVE_API_KEY) chain.push(() => searchBrave(params.query, signal));
-			if (preferred === "exa" && process.env.EXA_API_KEY) chain.push(() => searchExa(params.query, signal));
-			chain.push(() => searchDuckDuckGo(params.query, signal)); // always last
-
+			const chain = getChain();
 			let lastError: any;
-			for (const fn of chain) {
+			for (const provider of chain) {
 				try {
-					const results = await fn();
+					const results = await provider.fn(params.query, signal);
 					if (results.length > 0) {
 						return {
 							content: [{ type: "text" as const, text: formatResults(results, params.query) }],
-							details: { query: params.query, count: results.length },
+							details: { query: params.query, provider: provider.name, count: results.length },
 						};
 					}
 				} catch (e) {
+					if ((e as any)?.name === "AbortError") throw e;
 					lastError = e;
 				}
 			}
-
 			return { content: [{ type: "text" as const, text: `Search failed: ${lastError?.message ?? "no results"}` }], details: {} };
 		},
 	});

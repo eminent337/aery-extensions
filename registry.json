@@ -96,6 +96,12 @@
       "install": "https://github.com/ifiokjr/oh-pi",
       "type": "bundle"
     },
+    "superpowers": {
+      "description": "Structured development methodology — brainstorm, plan, TDD, debug, review. Adapted from obra/superpowers for pi/Aery.",
+      "source": "coctostan/pi-superpowers",
+      "install": "https://github.com/coctostan/pi-superpowers",
+      "type": "skills"
+    },
     "geospatial": {
       "description": "Geospatial tools \u2014 GDAL, coordinate systems, GIS workflows",
       "extensions": [],

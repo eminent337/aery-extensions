@@ -64,21 +64,33 @@ async function searchBrave(query: string, signal: AbortSignal): Promise<SearchRe
 }
 
 async function searchDuckDuckGo(query: string, signal: AbortSignal): Promise<SearchResult[]> {
-	const res = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
-		signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; Aery/1.0)" },
-	});
-	const html = await res.text();
-	const results: SearchResult[] = [];
-	const rx = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
-	let m;
-	while ((m = rx.exec(html)) !== null && results.length < 8) {
-		let rawUrl = m[1].split("&rut=")[0].split("&amp;rut=")[0].replace(/^\/\/duckduckgo\.com\/l\/\?uddg=/, "");
-		const url = decodeURIComponent(rawUrl);
-		const title = m[2].replace(/<[^>]+>/g, "").trim();
-		const snippet = m[3].replace(/<[^>]+>/g, "").trim();
-		if (title && url.startsWith("http")) results.push({ title, url, snippet });
+	// Use duck-duck-scrape package (more reliable than raw HTML scraping)
+	try {
+		const { search, SafeSearchType } = await import("duck-duck-scrape" as any);
+		const response = await search(query, { safeSearch: SafeSearchType.STRICT });
+		return (response.results ?? []).slice(0, 8).map((r: any) => ({
+			title: r.title || r.url,
+			url: r.url,
+			snippet: r.description ?? "",
+		}));
+	} catch {
+		// Fallback to HTML scraping if package not available
+		const res = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
+			signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; Aery/1.0)" },
+		});
+		const html = await res.text();
+		const results: SearchResult[] = [];
+		const rx = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
+		let m;
+		while ((m = rx.exec(html)) !== null && results.length < 8) {
+			let rawUrl = m[1].split("&rut=")[0].split("&amp;rut=")[0].replace(/^\/\/duckduckgo\.com\/l\/\?uddg=/, "");
+			const url = decodeURIComponent(rawUrl);
+			const title = m[2].replace(/<[^>]+>/g, "").trim();
+			const snippet = m[3].replace(/<[^>]+>/g, "").trim();
+			if (title && url.startsWith("http")) results.push({ title, url, snippet });
+		}
+		return results;
 	}
-	return results;
 }
 
 type Provider = { name: string; key: string | undefined; fn: (q: string, s: AbortSignal) => Promise<SearchResult[]> };

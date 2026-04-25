@@ -103,9 +103,9 @@
       "type": "extension"
     },
     "superpowers": {
-      "description": "Structured development methodology \u2014 brainstorm, plan, TDD, debug, review. Adapted from obra/superpowers for pi/Aery.",
-      "source": "coctostan/pi-superpowers",
-      "install": "https://github.com/coctostan/pi-superpowers",
+      "description": "Structured development methodology \u2014 brainstorm, plan, TDD, debug, review. Adapted from obra/superpowers for Aery.",
+      "source": "eminent337/pi-superpowers",
+      "install": "https://github.com/eminent337/pi-superpowers",
       "type": "skills"
     },
     "geospatial": {

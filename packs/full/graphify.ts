@@ -28,12 +28,18 @@ async function ensureGraphify(exec: any): Promise<boolean> {
 }
 
 async function installGraphify(exec: any): Promise<{ ok: boolean; error?: string }> {
-	try {
-		const { exitCode, stderr } = await exec("pip", ["install", "graphifyy", "--quiet"], { timeout: 60_000 });
-		return exitCode === 0 ? { ok: true } : { ok: false, error: stderr };
-	} catch (e: any) {
-		return { ok: false, error: e.message };
+	// Try pip3, pip, then python3 -m pip
+	for (const [cmd, args] of [
+		["pip3", ["install", "graphifyy", "--quiet"]],
+		["pip", ["install", "graphifyy", "--quiet"]],
+		["python3", ["-m", "pip", "install", "graphifyy", "--quiet"]],
+	] as [string, string[]][]) {
+		try {
+			const { exitCode } = await exec(cmd, args, { timeout: 60_000 });
+			if (exitCode === 0) return { ok: true };
+		} catch { continue; }
 	}
+	return { ok: false, error: "pip not found. Install manually: pip install graphifyy" };
 }
 
 function loadGraphSummary(cwd: string): string | null {

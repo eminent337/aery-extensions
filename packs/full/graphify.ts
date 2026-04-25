@@ -54,13 +54,38 @@ function loadGraphSummary(cwd: string): string | null {
 
 export default function (aery: ExtensionAPI) {
 
-	// Auto-load graph summary on session start
+	// Check dependencies on session start and warn if missing
 	aery.on("session_start", async (_event, ctx) => {
+		if (!ctx.hasUI) return;
+
+		// Check python3
+		let hasPython = false;
+		try {
+			const { exitCode } = await aery.exec("python3", ["--version"], { timeout: 3000 });
+			hasPython = exitCode === 0;
+		} catch {}
+
+		if (!hasPython) {
+			ctx.ui.notify("⚠️ Graphify requires Python 3. Install: sudo apt install python3 python3-pip", "warning");
+			return;
+		}
+
+		// Check graphify
+		let hasGraphify = false;
+		try {
+			const { exitCode } = await aery.exec("python3", ["-m", "graphify", "--version"], { timeout: 5000 });
+			hasGraphify = exitCode === 0;
+		} catch {}
+
+		if (!hasGraphify) {
+			ctx.ui.notify("⚠️ Graphify not installed. Run: pip install graphifyy", "warning");
+		}
+
+		// Auto-load graph summary if present
 		const cwd = ctx.sessionManager?.getCwd?.() ?? process.cwd();
 		const summary = loadGraphSummary(cwd);
-		if (summary) {
+		if (summary && hasGraphify) {
 			ctx.ui.notify("📊 Graphify knowledge graph found — loaded into context", "info");
-			// Inject as system context so agent knows about the graph
 			aery.sendUserMessage(
 				`[graphify] Knowledge graph available for this project.\n\nGraph summary:\n${summary}\n\nUse the \`graphify_query\` tool to query the graph for specific questions.`,
 				{ deliverAs: "system" } as any

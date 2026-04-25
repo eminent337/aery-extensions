@@ -39,7 +39,8 @@
         "user-model",
         "skill-watcher",
         "skill-autocreate",
-        "health"
+        "health",
+        "graphify"
       ],
       "source": "eminent337/aery-extensions/packs/full"
     },
@@ -94,6 +95,13 @@
       "source": "ifiokjr/oh-pi",
       "install": "https://github.com/ifiokjr/oh-pi",
       "type": "bundle"
+    },
+    "graphify": {
+      "description": "Turn any folder of files (code, docs, papers, images, video) into a queryable knowledge graph. Outputs interactive HTML, GraphRAG-ready JSON, and GRAPH_REPORT.md. Use /graphify or the graphify tool.",
+      "source": "eminent337/aery-extensions/packs/full/graphify",
+      "install": "aery install git:github.com/eminent337/aery-extensions",
+      "type": "extension",
+      "requires": "pip install graphifyy"
     },
     "superpowers": {
       "description": "Structured development methodology — brainstorm, plan, TDD, debug, review. Adapted from obra/superpowers for pi/Aery.",

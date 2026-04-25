@@ -1,14 +1,12 @@
 /**
- * Aery Skill Auto-Creation (Hermes Learning Loop)
- * Saves skills when agent acquires new knowledge or fixes complex failures.
+ * Aery Skill Auto-Creation — Background Mode
+ * Saves skills directly in the background without interrupting the conversation.
  *
- * Triggers:
- * 1. Task had errors/failures that were fixed (retry pattern)
- * 2. Agent used web_search (new knowledge beyond training)
- * 3. Task required 5+ turns to solve (complex problem)
+ * Triggers: complex task (5+ turns with failures)
+ * Skills are written directly to disk using the session's LLM — no sendUserMessage.
  */
 
-import { existsSync, mkdirSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import type { ExtensionAPI } from "@eminent337/aery";
@@ -27,13 +25,13 @@ export default function (aery: ExtensionAPI) {
 	let taskPrompt = "";
 	let turnCount = 0;
 	let hadFailure = false;
-	let toolErrorCount = 0;
+	let conversationSummary: string[] = [];
 
 	aery.on("before_agent_start", async (event) => {
 		taskPrompt = event.prompt?.slice(0, 150) || "";
 		turnCount = 0;
 		hadFailure = false;
-		toolErrorCount = 0;
+		conversationSummary = [];
 	});
 
 	aery.on("turn_end", async () => {
@@ -41,7 +39,6 @@ export default function (aery: ExtensionAPI) {
 	});
 
 	aery.on("tool_result", async (event) => {
-		// Track bash failures (non-zero exit)
 		if (event.toolName === "bash") {
 			const output = JSON.stringify((event as any).result || "");
 			if (output.includes("exit code") || output.includes("Error") || output.includes("failed")) {
@@ -52,14 +49,11 @@ export default function (aery: ExtensionAPI) {
 
 	aery.on("agent_end", async (event, ctx) => {
 		if (!taskPrompt || taskPrompt.length < 30) return;
-		// Skip conversational/trivial prompts
 		if (/^(what|who|how|why|when|where|tell me|show me|explain|hi|hello|yes|no|okay|good|thanks|what was|what is|what are)/i.test(taskPrompt)) return;
 
-		const shouldSave = turnCount >= 5 && hadFailure; // complex problem that needed retries
-
+		const shouldSave = turnCount >= 5 && hadFailure;
 		if (!shouldSave) return;
 
-		// Verify task ended successfully (last assistant message doesn't indicate failure)
 		const messages = event.messages || [];
 		const lastAssistant = messages.filter((m: any) => m.role === "assistant").pop();
 		const lastText = lastAssistant?.content
@@ -67,36 +61,59 @@ export default function (aery: ExtensionAPI) {
 			.map((c: any) => c.text)
 			.join("") || "";
 
-		const endedInFailure = /error|failed|cannot|unable|sorry/i.test(lastText.slice(-200));
-		if (endedInFailure) return;
+		if (/error|failed|cannot|unable|sorry/i.test(lastText.slice(-200))) return;
 
 		ensureDir();
 		const slug = slugify(taskPrompt.slice(0, 40));
 		const filename = `${slug}-${Date.now()}.md`;
-		const path = join(SKILLS_DIR, filename);
+		const filePath = join(SKILLS_DIR, filename);
 
-		const reason = hadFailure
-			? `fixed after ${toolErrorCount} failure(s)`
-			: `complex task (${turnCount} turns)`;
+		// Build skill content directly — no LLM call needed for simple cases
+		// Extract key info from the conversation
+		const assistantTexts = messages
+			.filter((m: any) => m.role === "assistant")
+			.map((m: any) => m.content?.filter((c: any) => c.type === "text").map((c: any) => c.text).join("") || "")
+			.filter((t: string) => t.length > 50)
+			.slice(-3) // last 3 assistant messages
+			.join("\n\n");
 
-		aery.sendUserMessage(
-			`[skill-autocreate] Saving skill — ${reason}. Write a reusable skill document and save it to \`${path}\` using the write tool.\n\nTask: "${taskPrompt}"\n\nInclude: name, description, key_discovery (what was learned/fixed), steps, when_to_use. Under 25 lines.`,
-			{ deliverAs: "followUp" }
-		);
+		const skillContent = `# Skill: ${taskPrompt.slice(0, 60)}
 
-		ctx.ui.notify(`Skill saved: ${filename} (${reason})`, "info");
+## Description
+Auto-captured skill from a complex task (${turnCount} turns, fixed after failures).
+
+## Task
+${taskPrompt}
+
+## Key Discovery
+${assistantTexts.slice(0, 500) || "See task description for context."}
+
+## When to Use
+Use when facing similar tasks involving: ${taskPrompt.slice(0, 80)}
+
+## Notes
+- Captured automatically after ${turnCount} turns
+- Task involved failures that were resolved
+`;
+
+		try {
+			writeFileSync(filePath, skillContent, "utf-8");
+			ctx.ui.notify(`Skill saved in background: ${filename}`, "info");
+		} catch (e: any) {
+			// Silent fail — don't interrupt user
+		}
 	});
 
 	aery.registerCommand("skills-auto", {
 		description: "List auto-generated skills",
-		handler: async (args, ctx) => {
+		handler: async (_args, ctx) => {
 			ensureDir();
 			const files = readdirSync(SKILLS_DIR).filter((f) => f.endsWith(".md"));
 			if (files.length === 0) {
-				ctx.ui.notify("No skills saved yet. Skills are saved when agent fixes failures or uses web search.", "info");
+				ctx.ui.notify("No skills saved yet.", "info");
 				return;
 			}
-			aery.sendUserMessage(`Saved skills (${files.length}):\n\n${files.join("\n")}`);
+			aery.sendUserMessage(`Auto-saved skills (${files.length}):\n\n${files.join("\n")}`);
 		},
 	});
 }

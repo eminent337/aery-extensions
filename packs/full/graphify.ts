@@ -3,10 +3,18 @@
  * Turns any folder of files (code, docs, papers, images, video) into a
  * queryable knowledge graph with community detection and interactive HTML output.
  *
+ * Features:
+ * - /graphify command for direct use
+ * - graphify tool for agent use
+ * - graphify_query tool for querying existing graphs
+ * - Auto-loads graph summary on session start if graph.json exists
+ *
  * Source: https://github.com/safishamsi/graphify
- * Install graphify: pip install graphifyy
+ * Requires: pip install graphifyy
  */
 
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { ExtensionAPI } from "@eminent337/aery";
 import { Type } from "@sinclair/typebox";
 
@@ -28,75 +36,120 @@ async function installGraphify(exec: any): Promise<{ ok: boolean; error?: string
 	}
 }
 
+function loadGraphSummary(cwd: string): string | null {
+	const reportPath = join(cwd, "graphify-out", "GRAPH_REPORT.md");
+	if (existsSync(reportPath)) {
+		try {
+			return readFileSync(reportPath, "utf-8").slice(0, 2000);
+		} catch { return null; }
+	}
+	return null;
+}
+
 export default function (aery: ExtensionAPI) {
-	// Register graphify as a tool the agent can call
+
+	// Auto-load graph summary on session start
+	aery.on("session_start", async (_event, ctx) => {
+		const cwd = ctx.sessionManager?.getCwd?.() ?? process.cwd();
+		const summary = loadGraphSummary(cwd);
+		if (summary) {
+			ctx.ui.notify("📊 Graphify knowledge graph found — loaded into context", "info");
+			// Inject as system context so agent knows about the graph
+			aery.sendUserMessage(
+				`[graphify] Knowledge graph available for this project.\n\nGraph summary:\n${summary}\n\nUse the \`graphify_query\` tool to query the graph for specific questions.`,
+				{ deliverAs: "system" } as any
+			);
+		}
+	});
+
+	// graphify tool — build the graph
 	aery.registerTool({
 		name: "graphify",
-		description: "Build a knowledge graph from any folder of files (code, docs, papers, images, video). Outputs interactive HTML, GraphRAG-ready JSON, and a GRAPH_REPORT.md. Use when asked to analyze a codebase, understand architecture, map dependencies, or build a knowledge graph.",
+		description: "Build a knowledge graph from any folder of files (code, docs, papers, images, video). Outputs interactive HTML, GraphRAG-ready JSON, and GRAPH_REPORT.md. Use when asked to analyze a codebase, understand architecture, or map dependencies. For large codebases, prefer this over reading files individually.",
 		parameters: Type.Object({
 			path: Type.Optional(Type.String({ description: "Path to analyze. Defaults to current directory." })),
-			mode: Type.Optional(Type.String({ description: "Extraction mode: 'fast' (default) or 'deep' (richer edges)" })),
-			update: Type.Optional(Type.Boolean({ description: "Incremental update — only re-process changed files" })),
-			query: Type.Optional(Type.String({ description: "Query the existing graph instead of building it" })),
-			explain: Type.Optional(Type.String({ description: "Explain a specific node/concept in the graph" })),
-			no_viz: Type.Optional(Type.Boolean({ description: "Skip HTML visualization, just report + JSON" })),
+			mode: Type.Optional(Type.String({ description: "'fast' (default) or 'deep' (richer edges)" })),
+			update: Type.Optional(Type.Boolean({ description: "Incremental — only re-process changed files" })),
+			no_viz: Type.Optional(Type.Boolean({ description: "Skip HTML, just report + JSON" })),
 		}),
 		async execute(_id, params, signal, onUpdate, ctx) {
-			onUpdate?.({ content: [{ type: "text", text: "Checking graphify installation..." }], details: {} });
-
+			onUpdate?.({ content: [{ type: "text", text: "Checking graphify..." }], details: {} });
 			const installed = await ensureGraphify(ctx.exec);
 			if (!installed) {
-				onUpdate?.({ content: [{ type: "text", text: "Installing graphify (pip install graphifyy)..." }], details: {} });
-				const result = await installGraphify(ctx.exec);
-				if (!result.ok) {
-					return {
-						content: [{ type: "text" as const, text: `Failed to install graphify: ${result.error}\n\nInstall manually: pip install graphifyy` }],
-						details: {},
-						isError: true,
-					};
-				}
+				onUpdate?.({ content: [{ type: "text", text: "Installing graphify..." }], details: {} });
+				const r = await installGraphify(ctx.exec);
+				if (!r.ok) return { content: [{ type: "text" as const, text: `Install failed: ${r.error}\nRun: pip install graphifyy` }], details: {}, isError: true };
 			}
 
-			// Build the command
-			const args: string[] = ["-m", "graphify"];
+			const args = ["-m", "graphify", params.path ?? "."];
+			if (params.mode === "deep") args.push("--mode", "deep");
+			if (params.update) args.push("--update");
+			if (params.no_viz) args.push("--no-viz");
 
-			if (params.query) {
-				args.push("query", params.query);
-			} else if (params.explain) {
-				args.push("explain", params.explain);
-			} else {
-				args.push(params.path ?? ".");
-				if (params.mode === "deep") args.push("--mode", "deep");
-				if (params.update) args.push("--update");
-				if (params.no_viz) args.push("--no-viz");
-			}
-
-			onUpdate?.({ content: [{ type: "text", text: `Running: python3 ${args.join(" ")}` }], details: {} });
+			onUpdate?.({ content: [{ type: "text", text: `Building graph: ${args.join(" ")}` }], details: {} });
 
 			try {
 				const { stdout, stderr, exitCode } = await ctx.exec("python3", args, { timeout: 300_000, signal });
-
-				const output = stdout || stderr || "No output";
-				const success = exitCode === 0;
-
+				const out = stdout || stderr || "No output";
 				return {
-					content: [{ type: "text" as const, text: success ? output : `graphify failed (exit ${exitCode}):\n${output}` }],
+					content: [{ type: "text" as const, text: exitCode === 0 ? out : `Failed (exit ${exitCode}):\n${out}` }],
 					details: { exitCode, path: params.path ?? "." },
-					isError: !success,
+					isError: exitCode !== 0,
 				};
 			} catch (e: any) {
-				return {
-					content: [{ type: "text" as const, text: `Error running graphify: ${e.message}` }],
-					details: {},
-					isError: true,
-				};
+				return { content: [{ type: "text" as const, text: `Error: ${e.message}` }], details: {}, isError: true };
 			}
 		},
 	});
 
-	// Register /graphify command for direct use
+	// graphify_query tool — query existing graph
+	aery.registerTool({
+		name: "graphify_query",
+		description: "Query an existing graphify knowledge graph. Use this instead of reading files when a graph.json exists. Much more token-efficient for large codebases.",
+		parameters: Type.Object({
+			question: Type.String({ description: "Question to ask the knowledge graph" }),
+			path: Type.Optional(Type.String({ description: "Path where graphify-out/ exists. Defaults to current directory." })),
+			mode: Type.Optional(Type.String({ description: "'bfs' (default, broad context) or 'dfs' (trace specific path)" })),
+			budget: Type.Optional(Type.Number({ description: "Max tokens in answer (default: 1500)" })),
+		}),
+		async execute(_id, params, signal, onUpdate, ctx) {
+			const graphPath = join(params.path ?? ".", "graphify-out", "graph.json");
+			if (!existsSync(graphPath)) {
+				return {
+					content: [{ type: "text" as const, text: `No graph found at ${graphPath}. Run graphify first: /graphify ${params.path ?? "."}` }],
+					details: {}, isError: true,
+				};
+			}
+
+			const installed = await ensureGraphify(ctx.exec);
+			if (!installed) {
+				const r = await installGraphify(ctx.exec);
+				if (!r.ok) return { content: [{ type: "text" as const, text: `Install failed: ${r.error}` }], details: {}, isError: true };
+			}
+
+			const args = ["-m", "graphify", "query", params.question];
+			if (params.mode === "dfs") args.push("--dfs");
+			if (params.budget) args.push("--budget", String(params.budget));
+
+			onUpdate?.({ content: [{ type: "text", text: `Querying graph: "${params.question}"` }], details: {} });
+
+			try {
+				const { stdout, stderr, exitCode } = await ctx.exec("python3", args, { timeout: 60_000, signal });
+				const out = stdout || stderr || "No results";
+				return {
+					content: [{ type: "text" as const, text: out }],
+					details: { exitCode, question: params.question },
+					isError: exitCode !== 0,
+				};
+			} catch (e: any) {
+				return { content: [{ type: "text" as const, text: `Error: ${e.message}` }], details: {}, isError: true };
+			}
+		},
+	});
+
+	// /graphify command
 	aery.registerCommand("graphify", {
-		description: "Build a knowledge graph from the current directory. Usage: /graphify [path] [--deep] [--update] [--no-viz]",
+		description: "Build a knowledge graph. Usage: /graphify [path] [--deep] [--update] [--no-viz]",
 		handler: async (args, ctx) => {
 			const parts = args.trim().split(/\s+/).filter(Boolean);
 			const path = parts.find(p => !p.startsWith("--")) ?? ".";
@@ -109,11 +162,8 @@ export default function (aery: ExtensionAPI) {
 			const installed = await ensureGraphify(ctx.exec);
 			if (!installed) {
 				ctx.ui.notify("Installing graphify...", "info");
-				const result = await installGraphify(ctx.exec);
-				if (!result.ok) {
-					ctx.ui.notify(`Failed to install graphify: ${result.error}`, "error");
-					return;
-				}
+				const r = await installGraphify(ctx.exec);
+				if (!r.ok) { ctx.ui.notify(`Install failed: ${r.error}`, "error"); return; }
 			}
 
 			const cmdArgs = ["-m", "graphify", path];
@@ -127,7 +177,7 @@ export default function (aery: ExtensionAPI) {
 					ctx.ui.notify("Knowledge graph built! See graphify-out/", "info");
 					aery.sendUserMessage(`Graphify completed:\n\n${stdout}`);
 				} else {
-					ctx.ui.notify("Graphify failed — check output", "error");
+					ctx.ui.notify("Graphify failed", "error");
 					aery.sendUserMessage(`Graphify failed:\n\n${stdout}`);
 				}
 			} catch (e: any) {

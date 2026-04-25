@@ -46,6 +46,8 @@ export default function (aery: ExtensionAPI) {
 			lines.push(check("fd", cmd("fd --version"), "file search"));
 			lines.push(check("rg (ripgrep)", cmd("rg --version"), "code search"));
 			lines.push(check("tmux", cmd("tmux -V"), "required for worktree sessions"));
+			lines.push(check("python3", cmd("python3 --version"), "required for graphify"));
+			lines.push(check("graphify", cmd("python3 -m graphify --version"), "knowledge graph — pip install graphifyy"));
 
 			// Extensions
 			lines.push("\n### Extensions");

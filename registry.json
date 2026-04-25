@@ -99,6 +99,7 @@
     "graphify": {
       "description": "Turn any folder of files (code, docs, papers, images, video) into a queryable knowledge graph. Outputs interactive HTML, GraphRAG-ready JSON, and GRAPH_REPORT.md. Requires: pip install graphifyy",
       "source": "eminent337/aery-extensions",
+      "file": "packs/full/graphify.ts",
       "type": "extension"
     },
     "superpowers": {

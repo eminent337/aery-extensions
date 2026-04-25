@@ -103,7 +103,7 @@
       "type": "extension"
     },
     "superpowers": {
-      "description": "Structured development methodology — brainstorm, plan, TDD, debug, review. Adapted from obra/superpowers for pi/Aery.",
+      "description": "Structured development methodology \u2014 brainstorm, plan, TDD, debug, review. Adapted from obra/superpowers for pi/Aery.",
       "source": "coctostan/pi-superpowers",
       "install": "https://github.com/coctostan/pi-superpowers",
       "type": "skills"
@@ -119,6 +119,90 @@
       "extensions": [],
       "source": "eminent337/aery-extensions/packs/data-science",
       "coming_soon": true
+    },
+    "loop": {
+      "description": "Loop agent \u2014 repeats tasks until a condition is met or manually stopped",
+      "source": "eminent337/aery-extensions",
+      "file": "packs/full/loop.ts",
+      "type": "extension"
+    },
+    "worktree": {
+      "description": "Git worktree manager \u2014 parallel development in isolated branches with tmux",
+      "source": "eminent337/aery-extensions",
+      "file": "packs/full/worktree.ts",
+      "type": "extension"
+    },
+    "todo-manager": {
+      "description": "Todo list manager \u2014 persistent task tracking across sessions",
+      "source": "eminent337/aery-extensions",
+      "file": "packs/full/todo-manager.ts",
+      "type": "extension"
+    },
+    "cross-agent": {
+      "description": "Cross-agent communication \u2014 share context between multiple Aery sessions",
+      "source": "eminent337/aery-extensions",
+      "file": "packs/full/cross-agent.ts",
+      "type": "extension"
+    },
+    "session-timeline": {
+      "description": "Session timeline \u2014 visual history of all agent actions in a session",
+      "source": "eminent337/aery-extensions",
+      "file": "packs/full/session-timeline.ts",
+      "type": "extension"
+    },
+    "checkpoint": {
+      "description": "Checkpoint \u2014 save and restore session state at any point",
+      "source": "eminent337/aery-extensions",
+      "file": "packs/full/checkpoint.ts",
+      "type": "extension"
+    },
+    "operational-learning": {
+      "description": "Operational learning \u2014 agent learns from past sessions and improves",
+      "source": "eminent337/aery-extensions",
+      "file": "packs/full/operational-learning.ts",
+      "type": "extension"
+    },
+    "user-model": {
+      "description": "User model \u2014 agent remembers your preferences and working style",
+      "source": "eminent337/aery-extensions",
+      "file": "packs/full/user-model.ts",
+      "type": "extension"
+    },
+    "skill-watcher": {
+      "description": "Skill watcher \u2014 monitors and suggests skills based on your workflow",
+      "source": "eminent337/aery-extensions",
+      "file": "packs/full/skill-watcher.ts",
+      "type": "extension"
+    },
+    "skill-autocreate": {
+      "description": "Skill autocreate \u2014 automatically saves reusable skills in the background",
+      "source": "eminent337/aery-extensions",
+      "file": "packs/full/skill-autocreate.ts",
+      "type": "extension"
+    },
+    "health": {
+      "description": "Health check \u2014 runs linters, tests, and type checks on your project",
+      "source": "eminent337/aery-extensions",
+      "file": "packs/full/health.ts",
+      "type": "extension"
+    },
+    "multi-agent": {
+      "description": "Multi-agent \u2014 spawn and coordinate multiple agents in parallel",
+      "source": "eminent337/aery-extensions",
+      "file": "packs/full/multi-agent.ts",
+      "type": "extension"
+    },
+    "agent-chain": {
+      "description": "Agent chain \u2014 chain agents sequentially, passing output between them",
+      "source": "eminent337/aery-extensions",
+      "file": "packs/full/agent-chain.ts",
+      "type": "extension"
+    },
+    "agent-teams": {
+      "description": "Agent teams \u2014 create teams of specialized agents for complex tasks",
+      "source": "eminent337/aery-extensions",
+      "file": "packs/full/agent-teams.ts",
+      "type": "extension"
     }
   }
 }

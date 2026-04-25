@@ -30,10 +30,10 @@ function ensureDirs() {
 	});
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (aery: ExtensionAPI) {
 	ensureDirs();
 
-	pi.registerTool({
+	aery.registerTool({
 		name: "sendMessage",
 		description: "Send approval request to coordinator. Returns message ID to poll for response.",
 		parameters: Type.Object({
@@ -56,7 +56,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.registerTool({
+	aery.registerTool({
 		name: "checkMessage",
 		description: "Check if approval request has been approved/rejected. Returns status.",
 		parameters: Type.Object({
@@ -87,7 +87,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.registerCommand("tasks", {
+	aery.registerCommand("tasks", {
 		description: "List pending approval requests and approve/reject them",
 		handler: async (args, ctx) => {
 			const pending = readdirSync(PENDING_DIR).filter((f) => f.endsWith(".json"));
@@ -103,7 +103,7 @@ export default function (pi: ExtensionAPI) {
 						return `[${msg.id}] ${msg.from}: ${msg.action}\n  ${msg.details}`;
 					})
 					.join("\n\n");
-				pi.sendUserMessage(`Pending approvals:\n\n${list}\n\nUse: /tasks approve <id> or /tasks reject <id>`);
+				aery.sendUserMessage(`Pending approvals:\n\n${list}\n\nUse: /tasks approve <id> or /tasks reject <id>`);
 				return;
 			}
 

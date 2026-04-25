@@ -33,8 +33,8 @@ function parseInterval(s: string): number | null {
 	return null;
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.registerCommand("loop", {
+export default function (aery: ExtensionAPI) {
+	aery.registerCommand("loop", {
 		description: "Schedule recurring agent: /loop <interval> <prompt> | /loop stop [id] | /loop list",
 		handler: async (args, ctx) => {
 			if (!args) {
@@ -51,7 +51,7 @@ export default function (pi: ExtensionAPI) {
 				const list = Array.from(loops.values())
 					.map((l) => `[${l.id}] every ${l.interval / 1000}s — ${l.prompt.slice(0, 50)} (runs: ${l.runs})`)
 					.join("\n");
-				pi.sendUserMessage(`Active loops:\n\n${list}`);
+				aery.sendUserMessage(`Active loops:\n\n${list}`);
 				return;
 			}
 
@@ -98,7 +98,7 @@ export default function (pi: ExtensionAPI) {
 				ctx.ui.notify(`Loop ${id} queued (run #${loop.runs}): ${prompt.slice(0, 40)}`, "info");
 				// Wait for agent to finish current task before queuing next
 				await ctx.waitForIdle();
-				pi.sendUserMessage(`[Loop ${id}, run #${loop.runs}] ${prompt}`, { deliverAs: "followUp" });
+				aery.sendUserMessage(`[Loop ${id}, run #${loop.runs}] ${prompt}`, { deliverAs: "followUp" });
 			}, ms);
 
 			loops.set(id, { id, interval: ms, prompt, timer, runs: 0 });
@@ -107,7 +107,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// Clean up on shutdown
-	pi.on("session_shutdown", async () => {
+	aery.on("session_shutdown", async () => {
 		loops.forEach((l) => clearInterval(l.timer));
 		loops.clear();
 	});

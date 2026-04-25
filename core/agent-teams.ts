@@ -93,8 +93,8 @@ function sendMessage(teamName: string, to: string, from: string, text: string, s
 	writeInbox(teamName, to, inbox);
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.registerTool({
+export default function (aery: ExtensionAPI) {
+	aery.registerTool({
 		name: "TeamCreate",
 		description: "Create a new agent team with a task queue. Returns team name.",
 		parameters: Type.Object({
@@ -143,7 +143,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.registerTool({
+	aery.registerTool({
 		name: "TaskList",
 		description: "List tasks in a team. Shows pending, in_progress, and completed tasks.",
 		parameters: Type.Object({
@@ -184,7 +184,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.registerTool({
+	aery.registerTool({
 		name: "TaskClaim",
 		description: "Claim a task and mark it in_progress.",
 		parameters: Type.Object({
@@ -204,7 +204,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.registerTool({
+	aery.registerTool({
 		name: "TaskComplete",
 		description: "Mark a task as completed.",
 		parameters: Type.Object({
@@ -225,7 +225,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.registerTool({
+	aery.registerTool({
 		name: "TeamMessage",
 		description: "Send a message to a team member's inbox.",
 		parameters: Type.Object({
@@ -241,7 +241,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.registerTool({
+	aery.registerTool({
 		name: "TeamInbox",
 		description: "Read your inbox messages from the team.",
 		parameters: Type.Object({
@@ -262,7 +262,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.registerTool({
+	aery.registerTool({
 		name: "TeamDelete",
 		description: "Delete a team and all its tasks/inboxes when work is complete.",
 		parameters: Type.Object({

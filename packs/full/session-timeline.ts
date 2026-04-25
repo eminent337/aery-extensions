@@ -43,8 +43,8 @@ function getRecentEvents(limit: number = 10): TimelineEvent[] {
 	return lines.slice(-limit).map((line) => JSON.parse(line));
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.on("session_start", async (_event, ctx) => {
+export default function (aery: ExtensionAPI) {
+	aery.on("session_start", async (_event, ctx) => {
 		logEvent({ timestamp: Date.now(), type: "session_start", data: { cwd: process.cwd() } });
 		pruneTimeline();
 
@@ -58,7 +58,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// Inject context after compaction so LLM recovers state
-	pi.on("session_compact", async (_event, ctx) => {
+	aery.on("session_compact", async (_event, ctx) => {
 		logEvent({ timestamp: Date.now(), type: "session_start", data: { cwd: process.cwd(), reason: "post-compaction" } });
 
 		const recent = getRecentEvents(10);
@@ -76,17 +76,17 @@ export default function (pi: ExtensionAPI) {
 			.join("\n");
 
 		if (summary) {
-			pi.sendUserMessage(
+			aery.sendUserMessage(
 				`[Context recovered after compaction]\nRecent activity:\n${summary}\n\nContinue from where we left off.`,
 			);
 		}
 	});
 
-	pi.on("turn_end", async (_event, _ctx) => {
+	aery.on("turn_end", async (_event, _ctx) => {
 		logEvent({ timestamp: Date.now(), type: "session_end", data: {} });
 	});
 
-	pi.on("tool_call", async (event, _ctx) => {
+	aery.on("tool_call", async (event, _ctx) => {
 		logEvent({
 			timestamp: Date.now(),
 			type: "tool_call",
@@ -94,7 +94,7 @@ export default function (pi: ExtensionAPI) {
 		});
 	});
 
-	pi.on("model_changed", async (event, _ctx) => {
+	aery.on("model_changed", async (event, _ctx) => {
 		logEvent({
 			timestamp: Date.now(),
 			type: "model_change",
@@ -102,7 +102,7 @@ export default function (pi: ExtensionAPI) {
 		});
 	});
 
-	pi.registerCommand("timeline", {
+	aery.registerCommand("timeline", {
 		description: "Show recent session timeline",
 		handler: async (args, ctx) => {
 			const limit = args ? parseInt(args) : 10;
@@ -122,7 +122,7 @@ export default function (pi: ExtensionAPI) {
 				})
 				.join("\n");
 
-			pi.sendUserMessage(`Timeline (last ${events.length} events):\n\n${formatted}`);
+			aery.sendUserMessage(`Timeline (last ${events.length} events):\n\n${formatted}`);
 		},
 	});
 }

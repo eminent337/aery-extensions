@@ -9,15 +9,15 @@ import type { ExtensionAPI } from "@eminent337/aery";
 const MAX_CONSECUTIVE_FAILURES = 3;
 const MAX_TOOL_RESULT_CHARS = 20_000; // ~5K tokens
 
-export default function (pi: ExtensionAPI) {
+export default function (aery: ExtensionAPI) {
 	// Track consecutive failures per tool
 	const failures = new Map<string, number>();
 
-	pi.on("before_agent_start", async () => {
+	aery.on("before_agent_start", async () => {
 		failures.clear(); // reset on new user message
 	});
 
-	pi.on("tool_result", async (event, ctx) => {
+	aery.on("tool_result", async (event, ctx) => {
 		const toolName = event.toolName ?? "unknown";
 		const isError = (event as any).isError || (event as any).result?.isError;
 
@@ -39,7 +39,7 @@ export default function (pi: ExtensionAPI) {
 					`Circuit breaker: ${toolName} failed ${count}x in a row. Stopping to prevent infinite loop.`,
 					"error"
 				);
-				pi.sendUserMessage(
+				aery.sendUserMessage(
 					`[circuit-breaker] The tool "${toolName}" has failed ${count} times consecutively. ` +
 					`Stop retrying this approach. Report what went wrong and suggest an alternative strategy.`,
 					{ deliverAs: "followUp" }

@@ -32,8 +32,8 @@ async function fetchRegistry(): Promise<Registry | null> {
 	}
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.registerCommand("marketplace", {
+export default function (aery: ExtensionAPI) {
+	aery.registerCommand("marketplace", {
 		description: "Browse and install Aery extension packs",
 		handler: async (args, ctx) => {
 			ctx.ui.notify("Fetching extension registry...", "info");
@@ -59,7 +59,7 @@ export default function (pi: ExtensionAPI) {
 
 			if (choice.includes("List installed")) {
 				const result = await pi.exec("aery", ["list"]);
-				pi.sendUserMessage(`Installed packages:\n\n${result.stdout || "None"}`);
+				aery.sendUserMessage(`Installed packages:\n\n${result.stdout || "None"}`);
 				return;
 			}
 

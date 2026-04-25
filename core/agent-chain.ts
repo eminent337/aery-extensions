@@ -7,8 +7,8 @@
 
 import type { ExtensionAPI } from "@eminent337/aery";
 
-export default function (pi: ExtensionAPI) {
-	pi.registerCommand("chain", {
+export default function (aery: ExtensionAPI) {
+	aery.registerCommand("chain", {
 		description: "Run sequential prompts: /chain step one | step two | step three",
 		handler: async (args, ctx) => {
 			if (!args?.trim()) {
@@ -31,7 +31,7 @@ export default function (pi: ExtensionAPI) {
 					: `\n\n---\nStep ${i + 1}/${steps.length}: ${step}\n(Build on your previous response above)`
 			).join("");
 
-			pi.sendUserMessage(chainPrompt);
+			aery.sendUserMessage(chainPrompt);
 		},
 	});
 }

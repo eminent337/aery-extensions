@@ -19,8 +19,8 @@ function run(cmd: string, cwd?: string): { ok: boolean; out: string; err: string
 	}
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.registerTool({
+export default function (aery: ExtensionAPI) {
+	aery.registerTool({
 		name: "enter_worktree",
 		description: "Create an isolated git worktree and open a new aery session in it via tmux. Use for parallel feature development.",
 		parameters: Type.Object({
@@ -71,7 +71,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.registerTool({
+	aery.registerTool({
 		name: "exit_worktree",
 		description: "Remove the current git worktree and its branch. Warns if there are uncommitted changes.",
 		parameters: Type.Object({
@@ -111,7 +111,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// Parallel worktree spawning — spawn multiple aery agents in separate worktrees
-	pi.registerTool({
+	aery.registerTool({
 		name: "enter_worktree_parallel",
 		description: "Spawn multiple aery --print agents in separate git worktrees for parallel work",
 		parameters: Type.Object({

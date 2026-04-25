@@ -23,13 +23,13 @@ function saveScores(scores: Record<string, { success: number; fail: number }>) {
 	writeFileSync(SCORES_PATH, JSON.stringify(scores, null, 2));
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (aery: ExtensionAPI) {
 	let turnCount = 0;
 	let skillsUsedThisCycle = false;
 
 	if (!existsSync(SKILLS_DIR)) mkdirSync(SKILLS_DIR, { recursive: true });
 
-	pi.on("turn_end", async (event) => {
+	aery.on("turn_end", async (event) => {
 		turnCount++;
 
 		const usedSkill = event.toolResults?.some((r: any) => {
@@ -49,14 +49,14 @@ export default function (pi: ExtensionAPI) {
 
 		if (turnCount % IMPROVE_EVERY === 0 && skillsUsedThisCycle) {
 			skillsUsedThisCycle = false;
-			pi.sendUserMessage(
+			aery.sendUserMessage(
 				"[skill-watcher] You've used skills in the last 5 turns. Suggest any improvements to their instructions or scope. Be concise.",
 				{ deliverAs: "followUp" },
 			);
 		}
 	});
 
-	pi.registerCommand("skill-scores", {
+	aery.registerCommand("skill-scores", {
 		description: "Show skill confidence scores",
 		handler: async (args, ctx) => {
 			const scores = loadScores();
@@ -71,7 +71,7 @@ export default function (pi: ExtensionAPI) {
 					return `${name}: ${pct}% (${s.success}✓ ${s.fail}✗)`;
 				})
 				.join("\n");
-			pi.sendUserMessage(`Skill confidence scores:\n\n${list}`);
+			aery.sendUserMessage(`Skill confidence scores:\n\n${list}`);
 		},
 	});
 }

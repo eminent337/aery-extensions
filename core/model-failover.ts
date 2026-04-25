@@ -79,14 +79,14 @@ function shouldRetry(modelKey: string, retryMinutes: number): boolean {
 	return elapsed >= retryMinutes;
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (aery: ExtensionAPI) {
 	let config: FailoverConfig | null = null;
 
-	pi.on("session_start", async (_event, ctx) => {
+	aery.on("session_start", async (_event, ctx) => {
 		config = loadConfig();
 	});
 
-	pi.on("after_provider_response", async (event, ctx) => {
+	aery.on("after_provider_response", async (event, ctx) => {
 		if (!config?.enabled || !config.fallback_models.length) return;
 		// Detect rate limit (429) or auth errors (401/403)
 		if (event.status !== 429 && event.status !== 401 && event.status !== 403) return;
@@ -116,7 +116,7 @@ export default function (pi: ExtensionAPI) {
 		ctx.ui.notify("Failover: all fallback models exhausted", "error");
 	});
 
-	pi.registerCommand("failover", {
+	aery.registerCommand("failover", {
 		description: "Manage model failover",
 		handler: async (args, ctx) => {
 			if (!args) {

@@ -35,14 +35,14 @@ function writeTodos(sessionId: string, todos: TodoItem[]): void {
 	writeFileSync(getTodoPath(sessionId), JSON.stringify(todos, null, 2));
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (aery: ExtensionAPI) {
 	let sessionId = `session-${Date.now()}`;
 
-	pi.on("session_start", async (_event, ctx) => {
+	aery.on("session_start", async (_event, ctx) => {
 		sessionId = ctx.sessionManager?.getSessionId?.() || `session-${Date.now()}`;
 	});
 
-	pi.registerTool({
+	aery.registerTool({
 		name: "TodoWrite",
 		description: "Create or update your task list. Use this to track multi-step work. Call at start of complex tasks and update as you complete steps.",
 		parameters: Type.Object({
@@ -72,7 +72,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.registerTool({
+	aery.registerTool({
 		name: "TodoRead",
 		description: "Read your current task list. Use to check what's pending and what's done.",
 		parameters: Type.Object({}),

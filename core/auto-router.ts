@@ -73,10 +73,10 @@ function classifyPrompt(text: string): "simple" | "complex" | "unknown" {
 	return "unknown";
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (aery: ExtensionAPI) {
 	config = loadConfig();
 
-	pi.on("session_start", async (_event, ctx) => {
+	aery.on("session_start", async (_event, ctx) => {
 		config = loadConfig();
 		if (!config) config = { enabled: false, simple_keywords: [], complex_keywords: [] };
 		// Auto-enable if /provider selected "Auto"
@@ -86,7 +86,7 @@ export default function (pi: ExtensionAPI) {
 		} catch {}
 	});
 
-	pi.on("before_agent_start", async (event, ctx) => {
+	aery.on("before_agent_start", async (event, ctx) => {
 		if (!config?.enabled || manualOverride) return;
 		if (!config.fast_model || !config.power_model) return;
 
@@ -111,7 +111,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// Detect manual model changes
-	pi.on("model_changed", () => {
+	aery.on("model_changed", () => {
 		manualOverride = true;
 	});
 }

@@ -7,10 +7,10 @@ import { join } from "node:path";
 import { homedir } from "node:os";
 import type { ExtensionAPI } from "@eminent337/aery";
 
-export default function (pi: ExtensionAPI) {
+export default function (aery: ExtensionAPI) {
 
 	// /aery — meta command: status, reload, help
-	pi.registerCommand("aery", {
+	aery.registerCommand("aery", {
 		description: "Aery meta: /aery [status|reload|help]",
 		handler: async (args, ctx) => {
 			const cmd = args?.trim() || "status";
@@ -47,10 +47,10 @@ export default function (pi: ExtensionAPI) {
 	});
 
 
-	pi.registerCommand("init", {
+	aery.registerCommand("init", {
 		description: "Analyze codebase and generate AGENTS.md",
 		handler: async (_args, _ctx) => {
-			pi.sendUserMessage(
+			aery.sendUserMessage(
 				`Analyze this codebase and create an AGENTS.md file in the project root.\n\n` +
 				`Include:\n1. How to build, test, and run the project\n2. High-level architecture\n3. Key conventions\n\n` +
 				`Be concise. Read existing README.md and config files first.`
@@ -59,12 +59,12 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /commit — AI-assisted git commit
-	pi.registerCommand("commit", {
+	aery.registerCommand("commit", {
 		description: "Stage all changes and commit with an AI-generated message (voice: commit changes, save work)",
 		handler: async (args, _ctx) => {
 			const { stdout: status } = await pi.exec("git", ["status", "--short"]).catch(() => ({ stdout: "" }));
-			if (!status.trim()) { pi.sendUserMessage("Nothing to commit — working tree is clean."); return; }
-			pi.sendUserMessage(
+			if (!status.trim()) { aery.sendUserMessage("Nothing to commit — working tree is clean."); return; }
+			aery.sendUserMessage(
 				`Git status:\n${status}\n\n` +
 				`Stage all changes with \`git add -A\` then write a concise commit message and commit.\n` +
 				`${args ? `Context: ${args}\n` : ""}` +
@@ -74,11 +74,11 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /commit-push-pr
-	pi.registerCommand("commit-push-pr", {
+	aery.registerCommand("commit-push-pr", {
 		description: "Commit, push, and create a GitHub PR",
 		handler: async (args, _ctx) => {
 			const { stdout: branch } = await pi.exec("git", ["branch", "--show-current"]).catch(() => ({ stdout: "unknown" }));
-			pi.sendUserMessage(
+			aery.sendUserMessage(
 				`Branch: ${branch.trim()}\n\n1. git add -A\n2. Commit with a good message\n3. git push origin\n4. gh pr create\n` +
 				`${args ? `PR hint: ${args}` : ""}`
 			);
@@ -86,11 +86,11 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /branch
-	pi.registerCommand("branch", {
+	aery.registerCommand("branch", {
 		description: "Create a new git branch",
 		handler: async (args, _ctx) => {
 			const { stdout: current } = await pi.exec("git", ["branch", "--show-current"]).catch(() => ({ stdout: "unknown" }));
-			pi.sendUserMessage(
+			aery.sendUserMessage(
 				`Current branch: ${current.trim()}\n\nCreate a new git branch${args ? ` for: ${args}` : ""}.\n` +
 				`Use kebab-case. Run: git checkout -b <name>`
 			);
@@ -98,10 +98,10 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /review
-	pi.registerCommand("review", {
+	aery.registerCommand("review", {
 		description: "Run a code review on current changes or a PR (voice: review code, check my work)",
 		handler: async (args, _ctx) => {
-			pi.sendUserMessage(
+			aery.sendUserMessage(
 				`Run a code review${args ? ` on: ${args}` : " on current uncommitted changes"}.\n\n` +
 				`Use \`git diff HEAD\` or \`gh pr diff ${args || ""}\` to get the diff.\n` +
 				`Review for: bugs, security issues, error handling, test coverage, code style.`
@@ -110,7 +110,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /diff
-	pi.registerCommand("diff", {
+	aery.registerCommand("diff", {
 		description: "Show uncommitted changes",
 		handler: async (_args, ctx) => {
 			const { stdout: diff } = await pi.exec("git", ["diff", "--stat", "HEAD"]).catch(() => ({ stdout: "" }));
@@ -121,7 +121,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /aery-export
-	pi.registerCommand("aery-export", {
+	aery.registerCommand("aery-export", {
 		description: "Export conversation to a text file",
 		handler: async (args, ctx) => {
 			const filename = args || `aery-session-${Date.now()}.txt`;
@@ -141,7 +141,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /aery-copy
-	pi.registerCommand("aery-copy", {
+	aery.registerCommand("aery-copy", {
 		description: "Copy last assistant response to clipboard",
 		handler: async (_args, ctx) => {
 			const entries = ctx.sessionManager.getBranch().filter(e => e.type === "message");
@@ -159,7 +159,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /effort
-	pi.registerCommand("effort", {
+	aery.registerCommand("effort", {
 		description: "Set reasoning effort: off | minimal | low | medium | high | xhigh",
 		handler: async (args, ctx) => {
 			const level = (args?.trim() || "medium") as any;
@@ -171,7 +171,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /rename
-	pi.registerCommand("rename", {
+	aery.registerCommand("rename", {
 		description: "Rename the current session",
 		handler: async (args, ctx) => {
 			if (!args) { ctx.ui.notify("Usage: /rename <name>", "warning"); return; }
@@ -181,7 +181,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /context
-	pi.registerCommand("context", {
+	aery.registerCommand("context", {
 		description: "Show context window usage",
 		handler: async (_args, ctx) => {
 			const usage = ctx.getContextUsage();
@@ -193,7 +193,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /cost
-	pi.registerCommand("cost", {
+	aery.registerCommand("cost", {
 		description: "Show session API cost",
 		handler: async (_args, ctx) => {
 			let cost = 0, input = 0, output = 0;
@@ -211,10 +211,10 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /plan
-	pi.registerCommand("plan", {
+	aery.registerCommand("plan", {
 		description: "Toggle read-only plan mode",
 		handler: async (_args, _ctx) => {
-			pi.sendUserMessage(
+			aery.sendUserMessage(
 				`Enter planning mode: analyze the codebase and create a detailed plan.\n` +
 				`DO NOT modify any files. Use only read, grep, find, ls tools.\n` +
 				`Write the plan to PLAN.md when done.`
@@ -223,10 +223,10 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /security-review
-	pi.registerCommand("security-review", {
+	aery.registerCommand("security-review", {
 		description: "Run an AI-assisted security audit (voice: security check, run audit)",
 		handler: async (args, _ctx) => {
-			pi.sendUserMessage(
+			aery.sendUserMessage(
 				`Perform a security review${args ? ` of: ${args}` : " of the current codebase"}.\n\n` +
 				`Check for: injection vulnerabilities, auth issues, secrets in code, insecure deps, input validation gaps.\n` +
 				`Be specific with file paths and line numbers.`
@@ -235,7 +235,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /doctor
-	pi.registerCommand("doctor", {
+	aery.registerCommand("doctor", {
 		description: "Diagnose aery installation",
 		handler: async (_args, ctx) => {
 			const checks: [string, string][] = [];
@@ -259,10 +259,10 @@ export default function (pi: ExtensionAPI) {
 
 
 	// /pr_comments
-	pi.registerCommand("pr_comments", {
+	aery.registerCommand("pr_comments", {
 		description: "Fetch and display PR review comments",
 		handler: async (args, _ctx) => {
-			pi.sendUserMessage(
+			aery.sendUserMessage(
 				`Fetch PR review comments${args ? ` for PR #${args}` : ""}.\n` +
 				`Run: gh pr view ${args || ""} --comments\n` +
 				`Summarize the feedback and suggest how to address each comment.`
@@ -271,10 +271,10 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /auto-fix
-	pi.registerCommand("auto-fix", {
+	aery.registerCommand("auto-fix", {
 		description: "Run lint and tests, then fix any errors (voice: fix errors, run tests)",
 		handler: async (args, _ctx) => {
-			pi.sendUserMessage(
+			aery.sendUserMessage(
 				`Run the project's lint and test commands${args ? ` (${args})` : ""}.\n` +
 				`Check package.json scripts for lint/test. Fix all errors. Repeat until clean.`
 			);
@@ -282,7 +282,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /tasks
-	pi.registerCommand("tasks", {
+	aery.registerCommand("tasks", {
 		description: "List running background processes",
 		handler: async (_args, ctx) => {
 			const { stdout } = await pi.exec("bash", ["-c", "ps aux | grep -E 'node|bun|python' | grep -v grep | grep -v 'ps aux' | head -10"]).catch(() => ({ stdout: "" }));
@@ -291,7 +291,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /wiki
-	pi.registerCommand("wiki", {
+	aery.registerCommand("wiki", {
 		description: "Manage project wiki in .aery/wiki/",
 		handler: async (args, ctx) => {
 			const wikiDir = join(process.cwd(), ".aery", "wiki");
@@ -303,16 +303,16 @@ export default function (pi: ExtensionAPI) {
 			} else if (args === "status") {
 				ctx.ui.notify(existsSync(wikiDir) ? `Wiki at ${wikiDir}` : "No wiki. Run /wiki init", "info");
 			} else {
-				pi.sendUserMessage(`Help manage the project wiki in .aery/wiki/. ${args || "List existing wiki files."}`);
+				aery.sendUserMessage(`Help manage the project wiki in .aery/wiki/. ${args || "List existing wiki files."}`);
 			}
 		},
 	});
 
 	// /bughunter
-	pi.registerCommand("bughunter", {
+	aery.registerCommand("bughunter", {
 		description: "Enter bug hunting mode",
 		handler: async (args, _ctx) => {
-			pi.sendUserMessage(
+			aery.sendUserMessage(
 				`Enter bug hunting mode${args ? ` for: ${args}` : ""}.\n\n` +
 				`1. Read error logs and stack traces\n2. Reproduce the bug\n3. Identify root cause\n4. Fix minimally\n5. Verify fix\n\n` +
 				`Start by checking recent errors and git log.`
@@ -321,7 +321,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /rewind
-	pi.registerCommand("rewind", {
+	aery.registerCommand("rewind", {
 		description: "Show recent messages to rewind to",
 		handler: async (_args, ctx) => {
 			const entries = ctx.sessionManager.getBranch()
@@ -338,10 +338,10 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// /ultraplan
-	pi.registerCommand("ultraplan", {
+	aery.registerCommand("ultraplan", {
 		description: "Deep planning mode before implementation (voice: plan this, think it through)",
 		handler: async (args, _ctx) => {
-			pi.sendUserMessage(
+			aery.sendUserMessage(
 				`Ultra-planning mode for: ${args || "the current task"}.\n\n` +
 				`Phase 1 — Explore (read-only): map files, understand deps, identify risks.\n` +
 				`Phase 2 — Plan: write step-by-step plan to PLAN.md with rollback strategy.\n\n` +

@@ -8,8 +8,8 @@ const LOGO = [
 	"╩ ╩╚═╝╩╚═ ╩ ",
 ];
 
-export default function (pi: ExtensionAPI) {
-	pi.on("session_start", async (_event, ctx) => {
+export default function (aery: ExtensionAPI) {
+	aery.on("session_start", async (_event, ctx) => {
 		if (!ctx.hasUI) return;
 
 		ctx.ui.setHeader((_tui, theme) => ({

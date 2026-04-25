@@ -85,9 +85,9 @@ function classify(p: string): "complex"|"simple"|"unknown" {
 	return "unknown";
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (aery: ExtensionAPI) {
 
-	pi.on("session_start", async (_event, ctx) => {
+	aery.on("session_start", async (_event, ctx) => {
 		const d = loadProfiles();
 		if (d.active === "auto") { autoEnabled = true; return; }
 		autoEnabled = false;
@@ -99,11 +99,11 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// Always capture last prompt for retry after failover
-	pi.on("before_agent_start", async (event) => {
+	aery.on("before_agent_start", async (event) => {
 		lastPrompt = (event as any).prompt ?? "";
 	});
 
-	pi.on("before_agent_start", async (event, ctx) => {
+	aery.on("before_agent_start", async (event, ctx) => {
 		if (!autoEnabled) return;
 		if (justFailedOver) { justFailedOver = false; return; }
 
@@ -144,7 +144,7 @@ export default function (pi: ExtensionAPI) {
 		}
 	});
 
-	pi.on("model_select", async (event, ctx) => {
+	aery.on("model_select", async (event, ctx) => {
 		if (!autoEnabled) return;
 		if (autoRouterSwitching) return; // auto-router triggered this, don't disable
 		if ((event as any).source === "restore") return;
@@ -155,7 +155,7 @@ export default function (pi: ExtensionAPI) {
 		ctx.ui.notify(`Auto-router disabled. Using: ${event.model?.id}`, "info");
 	});
 
-	pi.on("after_provider_response", async (event, ctx) => {
+	aery.on("after_provider_response", async (event, ctx) => {
 		if (!autoEnabled) return;
 		if (event.status >= 200 && event.status < 300) {
 			const cur = ctx.model;
@@ -184,7 +184,7 @@ export default function (pi: ExtensionAPI) {
 			autoRouterSwitching = false;
 			// Retry the same prompt on the new model
 			if (lastPrompt) {
-				pi.sendUserMessage(lastPrompt, { deliverAs: "followUp" });
+				aery.sendUserMessage(lastPrompt, { deliverAs: "followUp" });
 			}
 		} else {
 			failedModels.clear();
@@ -192,7 +192,7 @@ export default function (pi: ExtensionAPI) {
 		}
 	});
 
-	pi.registerCommand("provider", {
+	aery.registerCommand("provider", {
 		description: "Set up a provider profile",
 		handler: async (_args, ctx) => {
 			const d = loadProfiles();

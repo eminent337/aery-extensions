@@ -23,8 +23,8 @@ function resolveIncludes(content: string, basePath: string, visited = new Set<st
 	});
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.on("before_agent_start", async (event, _ctx) => {
+export default function (aery: ExtensionAPI) {
+	aery.on("before_agent_start", async (event, _ctx) => {
 		if (!event.systemPrompt.includes("@include")) return;
 		const resolved = resolveIncludes(event.systemPrompt, process.cwd());
 		if (resolved !== event.systemPrompt) {

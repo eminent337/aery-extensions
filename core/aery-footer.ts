@@ -23,14 +23,14 @@ function getActiveModelShort(ctx: any): string {
 	} catch { return "—"; }
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.on("session_start", async (_event, ctx) => {
+export default function (aery: ExtensionAPI) {
+	aery.on("session_start", async (_event, ctx) => {
 		if (!ctx.hasUI) return;
 
 		let cachedCost = 0;
 		let cachedTokens = 0;
 
-		pi.on("turn_end", async () => {
+		aery.on("turn_end", async () => {
 			let cost = 0, tokens = 0;
 			for (const e of ctx.sessionManager.getBranch()) {
 				if (e.type === "message" && (e as any).message?.role === "assistant") {

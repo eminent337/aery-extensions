@@ -57,8 +57,8 @@ async function runCheck(
 	}
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.registerCommand("health", {
+export default function (aery: ExtensionAPI) {
+	aery.registerCommand("health", {
 		description: "Run linters/tests, show 0-10 health score with trends",
 		handler: async (args, ctx) => {
 			const cwd = process.cwd();
@@ -125,7 +125,7 @@ export default function (pi: ExtensionAPI) {
 				...checks.map((c) => `${c.passed ? "✓" : "✗"} ${c.name}${c.passed ? "" : `\n  ${c.output}`}`),
 			];
 
-			pi.sendUserMessage(lines.join("\n"));
+			aery.sendUserMessage(lines.join("\n"));
 		},
 	});
 }

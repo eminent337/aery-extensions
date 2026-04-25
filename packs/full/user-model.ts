@@ -55,8 +55,8 @@ function detectFromProject(cwd: string): Record<string, string> {
 	return detected;
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.on("session_start", async (_event, ctx) => {
+export default function (aery: ExtensionAPI) {
+	aery.on("session_start", async (_event, ctx) => {
 		const model = load();
 		const detected = detectFromProject(process.cwd());
 
@@ -78,7 +78,7 @@ export default function (pi: ExtensionAPI) {
 		}
 	});
 
-	pi.registerCommand("pref", {
+	aery.registerCommand("pref", {
 		description: "Set/get user preferences: /pref set <key> <value> | /pref list | /pref clear",
 		handler: async (args, ctx) => {
 			const model = load();
@@ -89,7 +89,7 @@ export default function (pi: ExtensionAPI) {
 					return;
 				}
 				const list = Object.entries(model.preferences).map(([k, v]) => `${k}: ${v}`).join("\n");
-				pi.sendUserMessage(`User preferences:\n\n${list}`);
+				aery.sendUserMessage(`User preferences:\n\n${list}`);
 				return;
 			}
 

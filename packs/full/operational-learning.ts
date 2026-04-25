@@ -36,8 +36,8 @@ function getLearnings(cwd?: string): Learning[] {
 	return cwd ? all.filter((l) => l.cwd === cwd) : all;
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.on("session_start", async (_event, ctx) => {
+export default function (aery: ExtensionAPI) {
+	aery.on("session_start", async (_event, ctx) => {
 		const cwd = process.cwd();
 		const learnings = getLearnings(cwd);
 
@@ -48,7 +48,7 @@ export default function (pi: ExtensionAPI) {
 		}
 	});
 
-	pi.on("tool_result", async (event, _ctx) => {
+	aery.on("tool_result", async (event, _ctx) => {
 		if (event.toolName === "bash" && event.result) {
 			const result = event.result as any;
 			if (result.exitCode && result.exitCode !== 0) {
@@ -66,7 +66,7 @@ export default function (pi: ExtensionAPI) {
 		}
 	});
 
-	pi.registerCommand("learn", {
+	aery.registerCommand("learn", {
 		description: "Record a learning/gotcha for future sessions",
 		handler: async (args, ctx) => {
 			if (!args) {
@@ -86,7 +86,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.registerCommand("learnings", {
+	aery.registerCommand("learnings", {
 		description: "Show all learnings for this project",
 		handler: async (args, ctx) => {
 			const cwd = process.cwd();
@@ -104,7 +104,7 @@ export default function (pi: ExtensionAPI) {
 				})
 				.join("\n");
 
-			pi.sendUserMessage(`Learnings for this project (${learnings.length}):\n\n${formatted}`);
+			aery.sendUserMessage(`Learnings for this project (${learnings.length}):\n\n${formatted}`);
 		},
 	});
 }

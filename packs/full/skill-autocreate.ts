@@ -23,24 +23,24 @@ function slugify(text: string): string {
 	return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40).replace(/-$/, "");
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (aery: ExtensionAPI) {
 	let taskPrompt = "";
 	let turnCount = 0;
 	let hadFailure = false;
 	let toolErrorCount = 0;
 
-	pi.on("before_agent_start", async (event) => {
+	aery.on("before_agent_start", async (event) => {
 		taskPrompt = event.prompt?.slice(0, 150) || "";
 		turnCount = 0;
 		hadFailure = false;
 		toolErrorCount = 0;
 	});
 
-	pi.on("turn_end", async () => {
+	aery.on("turn_end", async () => {
 		turnCount++;
 	});
 
-	pi.on("tool_result", async (event) => {
+	aery.on("tool_result", async (event) => {
 		// Track bash failures (non-zero exit)
 		if (event.toolName === "bash") {
 			const output = JSON.stringify((event as any).result || "");
@@ -50,7 +50,7 @@ export default function (pi: ExtensionAPI) {
 		}
 	});
 
-	pi.on("agent_end", async (event, ctx) => {
+	aery.on("agent_end", async (event, ctx) => {
 		if (!taskPrompt || taskPrompt.length < 30) return;
 		// Skip conversational/trivial prompts
 		if (/^(what|who|how|why|when|where|tell me|show me|explain|hi|hello|yes|no|okay|good|thanks|what was|what is|what are)/i.test(taskPrompt)) return;
@@ -79,7 +79,7 @@ export default function (pi: ExtensionAPI) {
 			? `fixed after ${toolErrorCount} failure(s)`
 			: `complex task (${turnCount} turns)`;
 
-		pi.sendUserMessage(
+		aery.sendUserMessage(
 			`[skill-autocreate] Saving skill — ${reason}. Write a reusable skill document and save it to \`${path}\` using the write tool.\n\nTask: "${taskPrompt}"\n\nInclude: name, description, key_discovery (what was learned/fixed), steps, when_to_use. Under 25 lines.`,
 			{ deliverAs: "followUp" }
 		);
@@ -87,7 +87,7 @@ export default function (pi: ExtensionAPI) {
 		ctx.ui.notify(`Skill saved: ${filename} (${reason})`, "info");
 	});
 
-	pi.registerCommand("skills-auto", {
+	aery.registerCommand("skills-auto", {
 		description: "List auto-generated skills",
 		handler: async (args, ctx) => {
 			ensureDir();
@@ -96,7 +96,7 @@ export default function (pi: ExtensionAPI) {
 				ctx.ui.notify("No skills saved yet. Skills are saved when agent fixes failures or uses web search.", "info");
 				return;
 			}
-			pi.sendUserMessage(`Saved skills (${files.length}):\n\n${files.join("\n")}`);
+			aery.sendUserMessage(`Saved skills (${files.length}):\n\n${files.join("\n")}`);
 		},
 	});
 }

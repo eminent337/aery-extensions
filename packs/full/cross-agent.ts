@@ -36,8 +36,8 @@ function parseFrontmatter(content: string): { name?: string; description?: strin
 	return { name: meta.name, description: meta.description, body: match[2].trim() };
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.on("session_start", async (_event, ctx) => {
+export default function (aery: ExtensionAPI) {
+	aery.on("session_start", async (_event, ctx) => {
 		const cwd = process.cwd();
 		let loaded = 0;
 
@@ -57,7 +57,7 @@ export default function (pi: ExtensionAPI) {
 					const cmdDesc = description ?? `Skill from ${dir}/${file}`;
 
 					// Register as a slash command that sends the skill prompt
-					pi.registerCommand(cmdName, {
+					aery.registerCommand(cmdName, {
 						description: `[${dir}] ${cmdDesc}`,
 						handler: async (args, cmdCtx) => {
 							const prompt = args ? body.replace(/\$@/g, args).replace(/\$1/g, args) : body;

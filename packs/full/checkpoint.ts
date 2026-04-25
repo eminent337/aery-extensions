@@ -58,8 +58,8 @@ function listCheckpoints(cwd?: string): Checkpoint[] {
 	return cwd ? checkpoints.filter((c) => c.cwd === cwd) : checkpoints;
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.registerCommand("checkpoint", {
+export default function (aery: ExtensionAPI) {
+	aery.registerCommand("checkpoint", {
 		description: "Save/load/list working state snapshots",
 		handler: async (args, ctx) => {
 			const [action, ...rest] = (args || "").split(" ");
@@ -83,7 +83,7 @@ export default function (pi: ExtensionAPI) {
 					})
 					.join("\n\n");
 
-				pi.sendUserMessage(`Checkpoints:\n\n${formatted}`);
+				aery.sendUserMessage(`Checkpoints:\n\n${formatted}`);
 				return;
 			}
 
@@ -159,7 +159,7 @@ export default function (pi: ExtensionAPI) {
 					`Remaining: ${checkpoint.remaining.length}`,
 				].join("\n");
 
-				pi.sendUserMessage(`Loaded checkpoint:\n\n${summary}`);
+				aery.sendUserMessage(`Loaded checkpoint:\n\n${summary}`);
 				return;
 			}
 

@@ -14,11 +14,11 @@ const WARN_BUFFER = 20_000;
 const COMPACT_BUFFER = 13_000;
 const MAX_FAILURES = 3;
 
-export default function (pi: ExtensionAPI) {
+export default function (aery: ExtensionAPI) {
 	let failures = 0;
 	let warned = false;
 
-	pi.on("turn_end", async (_event, ctx) => {
+	aery.on("turn_end", async (_event, ctx) => {
 		const usage = ctx.getContextUsage();
 		if (!usage?.tokens || !usage.contextWindow) return;
 

@@ -44,10 +44,10 @@ const ALWAYS_BLOCK = [
 	/:(){:|:&};:/,  // fork bomb
 ];
 
-export default function (pi: ExtensionAPI) {
+export default function (aery: ExtensionAPI) {
 	let config = loadConfig();
 
-	pi.registerCommand("aery-dc-reload", {
+	aery.registerCommand("aery-dc-reload", {
 		description: "Reload damage-control rules (internal)",
 		handler: async (_args, ctx) => {
 			config = loadConfig();
@@ -55,7 +55,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.on("tool_call", async (event, _ctx) => {
+	aery.on("tool_call", async (event, _ctx) => {
 		const toolName = event.toolName;
 		const input = event.input as any;
 

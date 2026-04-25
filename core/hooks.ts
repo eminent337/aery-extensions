@@ -135,7 +135,7 @@ function runHook(entry: HookEntry, env: Record<string, string>, ctx?: any): { bl
 	if (type === "prompt") {
 		if (!entry.prompt || !ctx) return { blocked: false, reason: "" };
 		const message = entry.prompt.replace(/\$(\w+)/g, (_, key) => env[key] || "");
-		pi.sendUserMessage(message).catch(() => {});
+		aery.sendUserMessage(message).catch(() => {});
 		return { blocked: false, reason: "" };
 	}
 
@@ -152,15 +152,15 @@ function runHook(entry: HookEntry, env: Record<string, string>, ctx?: any): { bl
 	return { blocked: false, reason: "" };
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (aery: ExtensionAPI) {
 	let hooks: HooksConfig = {};
 
-	pi.on("session_start", async () => {
+	aery.on("session_start", async () => {
 		hooks = loadHooks();
 	});
 
 	// Reload hooks on /reload
-	pi.registerCommand("aery-hooks-reload", {
+	aery.registerCommand("aery-hooks-reload", {
 		description: "Reload hooks.yaml (internal)",
 		handler: async (_args, ctx) => {
 			hooks = loadHooks();
@@ -168,7 +168,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.on("tool_call", async (event, ctx) => {
+	aery.on("tool_call", async (event, ctx) => {
 		const entries = hooks.PreToolUse ?? [];
 		if (!entries.length) return;
 
@@ -201,7 +201,7 @@ export default function (pi: ExtensionAPI) {
 		}
 	});
 
-	pi.on("tool_result", async (event, ctx) => {
+	aery.on("tool_result", async (event, ctx) => {
 		const entries = hooks.PostToolUse ?? [];
 		if (!entries.length) return;
 
@@ -227,7 +227,7 @@ export default function (pi: ExtensionAPI) {
 		}
 	});
 
-	pi.on("turn_end", async (_event, _ctx) => {
+	aery.on("turn_end", async (_event, _ctx) => {
 		const entries = hooks.Stop ?? [];
 		for (const entry of entries) {
 			if (!entry.command) continue;

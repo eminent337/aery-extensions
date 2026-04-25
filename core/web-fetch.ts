@@ -47,8 +47,8 @@ function htmlToMarkdown(html: string): string {
 	return html;
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.registerTool({
+export default function (aery: ExtensionAPI) {
+	aery.registerTool({
 		name: "web_fetch",
 		description: "Fetch a URL and return its content as markdown. Use for reading documentation, articles, or any web page.",
 		parameters: Type.Object({

@@ -117,8 +117,8 @@ function formatResults(results: SearchResult[], query: string): string {
 	return results.map((r, i) => `${i + 1}. **${r.title}**\n   ${r.url}\n   ${r.snippet}`).join("\n\n");
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.registerTool({
+export default function (aery: ExtensionAPI) {
+	aery.registerTool({
 		name: "web_search",
 		description: "Search the web. Providers auto-selected by priority (firecrawl > tavily > exa > jina > brave > duckduckgo). Control with WEB_SEARCH_PROVIDER env var.",
 		parameters: Type.Object({

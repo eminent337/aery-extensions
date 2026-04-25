@@ -34,7 +34,7 @@ export default function (aery: ExtensionAPI) {
 				// status
 				const usage = ctx.getContextUsage();
 				const model = ctx.model;
-				const thinking = pi.getThinkingLevel();
+				const thinking = aery.getThinkingLevel();
 				ctx.ui.notify(
 					`Model: ${model ? `${model.provider}/${model.id}` : "none"}\n` +
 					`Thinking: ${thinking}\n` +
@@ -62,7 +62,7 @@ export default function (aery: ExtensionAPI) {
 	aery.registerCommand("commit", {
 		description: "Stage all changes and commit with an AI-generated message (voice: commit changes, save work)",
 		handler: async (args, _ctx) => {
-			const { stdout: status } = await pi.exec("git", ["status", "--short"]).catch(() => ({ stdout: "" }));
+			const { stdout: status } = await aery.exec("git", ["status", "--short"]).catch(() => ({ stdout: "" }));
 			if (!status.trim()) { aery.sendUserMessage("Nothing to commit — working tree is clean."); return; }
 			aery.sendUserMessage(
 				`Git status:\n${status}\n\n` +
@@ -77,7 +77,7 @@ export default function (aery: ExtensionAPI) {
 	aery.registerCommand("commit-push-pr", {
 		description: "Commit, push, and create a GitHub PR",
 		handler: async (args, _ctx) => {
-			const { stdout: branch } = await pi.exec("git", ["branch", "--show-current"]).catch(() => ({ stdout: "unknown" }));
+			const { stdout: branch } = await aery.exec("git", ["branch", "--show-current"]).catch(() => ({ stdout: "unknown" }));
 			aery.sendUserMessage(
 				`Branch: ${branch.trim()}\n\n1. git add -A\n2. Commit with a good message\n3. git push origin\n4. gh pr create\n` +
 				`${args ? `PR hint: ${args}` : ""}`
@@ -89,7 +89,7 @@ export default function (aery: ExtensionAPI) {
 	aery.registerCommand("branch", {
 		description: "Create a new git branch",
 		handler: async (args, _ctx) => {
-			const { stdout: current } = await pi.exec("git", ["branch", "--show-current"]).catch(() => ({ stdout: "unknown" }));
+			const { stdout: current } = await aery.exec("git", ["branch", "--show-current"]).catch(() => ({ stdout: "unknown" }));
 			aery.sendUserMessage(
 				`Current branch: ${current.trim()}\n\nCreate a new git branch${args ? ` for: ${args}` : ""}.\n` +
 				`Use kebab-case. Run: git checkout -b <name>`
@@ -113,8 +113,8 @@ export default function (aery: ExtensionAPI) {
 	aery.registerCommand("diff", {
 		description: "Show uncommitted changes",
 		handler: async (_args, ctx) => {
-			const { stdout: diff } = await pi.exec("git", ["diff", "--stat", "HEAD"]).catch(() => ({ stdout: "" }));
-			const { stdout: status } = await pi.exec("git", ["status", "--short"]).catch(() => ({ stdout: "" }));
+			const { stdout: diff } = await aery.exec("git", ["diff", "--stat", "HEAD"]).catch(() => ({ stdout: "" }));
+			const { stdout: status } = await aery.exec("git", ["status", "--short"]).catch(() => ({ stdout: "" }));
 			if (!status.trim()) { ctx.ui.notify("No uncommitted changes", "info"); return; }
 			ctx.ui.notify(`Changes:\n${status}\n\n${diff}`, "info");
 		},
@@ -152,7 +152,7 @@ export default function (aery: ExtensionAPI) {
 				? m.content.filter((c: any) => c.type === "text").map((c: any) => c.text).join("\n")
 				: m.content ?? "";
 			try {
-				await pi.exec("bash", ["-c", `echo ${JSON.stringify(text)} | xclip -selection clipboard 2>/dev/null || echo ${JSON.stringify(text)} | xsel --clipboard 2>/dev/null || echo ${JSON.stringify(text)} | pbcopy 2>/dev/null`]);
+				await aery.exec("bash", ["-c", `echo ${JSON.stringify(text)} | xclip -selection clipboard 2>/dev/null || echo ${JSON.stringify(text)} | xsel --clipboard 2>/dev/null || echo ${JSON.stringify(text)} | pbcopy 2>/dev/null`]);
 				ctx.ui.notify("Copied to clipboard", "info");
 			} catch { ctx.ui.notify("Clipboard not available", "warning"); }
 		},
@@ -165,7 +165,7 @@ export default function (aery: ExtensionAPI) {
 			const level = (args?.trim() || "medium") as any;
 			const valid = ["off", "minimal", "low", "medium", "high", "xhigh"];
 			if (!valid.includes(level)) { ctx.ui.notify(`Valid levels: ${valid.join(", ")}`, "warning"); return; }
-			pi.setThinkingLevel(level);
+			aery.setThinkingLevel(level);
 			ctx.ui.notify(`Thinking level: ${level}`, "info");
 		},
 	});
@@ -175,7 +175,7 @@ export default function (aery: ExtensionAPI) {
 		description: "Rename the current session",
 		handler: async (args, ctx) => {
 			if (!args) { ctx.ui.notify("Usage: /rename <name>", "warning"); return; }
-			pi.setSessionName(args.trim());
+			aery.setSessionName(args.trim());
 			ctx.ui.notify(`Session renamed to: ${args.trim()}`, "info");
 		},
 	});
@@ -241,7 +241,7 @@ export default function (aery: ExtensionAPI) {
 			const checks: [string, string][] = [];
 			const check = async (label: string, cmd: string, args: string[]) => {
 				try {
-					const r = await pi.exec(cmd, args);
+					const r = await aery.exec(cmd, args);
 					checks.push([label, r.stdout.trim().split("\n")[0]]);
 				} catch {
 					checks.push([label, "❌ not found"]);
@@ -285,7 +285,7 @@ export default function (aery: ExtensionAPI) {
 	aery.registerCommand("tasks", {
 		description: "List running background processes",
 		handler: async (_args, ctx) => {
-			const { stdout } = await pi.exec("bash", ["-c", "ps aux | grep -E 'node|bun|python' | grep -v grep | grep -v 'ps aux' | head -10"]).catch(() => ({ stdout: "" }));
+			const { stdout } = await aery.exec("bash", ["-c", "ps aux | grep -E 'node|bun|python' | grep -v grep | grep -v 'ps aux' | head -10"]).catch(() => ({ stdout: "" }));
 			ctx.ui.notify(stdout.trim() || "No background tasks found", "info");
 		},
 	});

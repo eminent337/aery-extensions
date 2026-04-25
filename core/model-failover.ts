@@ -109,7 +109,7 @@ export default function (aery: ExtensionAPI) {
 			if (!model) continue;
 
 			ctx.ui.notify(`Failover: ${currentModel.id} (${event.status}), switching to ${model.id}`, "warning");
-			await pi.setModel(model);
+			await aery.setModel(model);
 			return;
 		}
 

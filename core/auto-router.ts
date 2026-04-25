@@ -105,7 +105,7 @@ export default function (aery: ExtensionAPI) {
 		const model = ctx.modelRegistry.find(targetModel.provider, targetModel.model_id);
 
 		if (model && model.id !== ctx.model?.id) {
-			await pi.setModel(model);
+			await aery.setModel(model);
 			ctx.ui.notify(`Auto-router: switched to ${model.id} (${classification} task)`, "info");
 		}
 	});

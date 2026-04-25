@@ -43,13 +43,13 @@ function loadHistory(cwd: string): HealthRecord[] {
 }
 
 async function runCheck(
-	pi: ExtensionAPI,
+	aery: ExtensionAPI,
 	name: string,
 	cmd: string,
 	args: string[],
 ): Promise<{ passed: boolean; output: string }> {
 	try {
-		const result = await pi.exec(cmd, args, { timeout: 30_000 });
+		const result = await aery.exec(cmd, args, { timeout: 30_000 });
 		const passed = result.code === 0;
 		return { passed, output: (result.stdout + result.stderr).trim().slice(0, 200) };
 	} catch {
@@ -76,28 +76,28 @@ export default function (aery: ExtensionAPI) {
 
 			// TypeScript
 			if (existsSync(join(cwd, "tsconfig.json"))) {
-				checks.push({ name: "TypeScript", ...(await runCheck(pi, "TypeScript", "npx", ["tsc", "--noEmit"])) });
+				checks.push({ name: "TypeScript", ...(await runCheck(aery, "TypeScript", "npx", ["tsc", "--noEmit"])) });
 			}
 
 			// Tests
 			if (scripts.test) {
-				checks.push({ name: "Tests", ...(await runCheck(pi, "Tests", runner, ["run", "test", "--", "--run"])) });
+				checks.push({ name: "Tests", ...(await runCheck(aery, "Tests", runner, ["run", "test", "--", "--run"])) });
 			}
 
 			// Biome
 			if (existsSync(join(cwd, "biome.json")) || existsSync(join(cwd, "biome.jsonc"))) {
-				checks.push({ name: "Biome", ...(await runCheck(pi, "Biome", "npx", ["biome", "check", "."])) });
+				checks.push({ name: "Biome", ...(await runCheck(aery, "Biome", "npx", ["biome", "check", "."])) });
 			}
 
 			// ESLint
 			if (existsSync(join(cwd, ".eslintrc.json")) || existsSync(join(cwd, "eslint.config.js")) || existsSync(join(cwd, "eslint.config.mjs"))) {
-				checks.push({ name: "ESLint", ...(await runCheck(pi, "ESLint", "npx", ["eslint", ".", "--max-warnings=0"])) });
+				checks.push({ name: "ESLint", ...(await runCheck(aery, "ESLint", "npx", ["eslint", ".", "--max-warnings=0"])) });
 			}
 
 			// Shellcheck
-			const shFiles = await pi.exec("find", [".", "-name", "*.sh", "-maxdepth", "3"], { timeout: 5000 });
+			const shFiles = await aery.exec("find", [".", "-name", "*.sh", "-maxdepth", "3"], { timeout: 5000 });
 			if (shFiles.stdout.trim()) {
-				checks.push({ name: "Shellcheck", ...(await runCheck(pi, "Shellcheck", "shellcheck", shFiles.stdout.trim().split("\n"))) });
+				checks.push({ name: "Shellcheck", ...(await runCheck(aery, "Shellcheck", "shellcheck", shFiles.stdout.trim().split("\n"))) });
 			}
 
 			if (checks.length === 0) {

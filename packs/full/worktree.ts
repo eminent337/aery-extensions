@@ -122,9 +122,9 @@ export default function (aery: ExtensionAPI) {
 			for (let i = 0; i < params.tasks.length; i++) {
 				const task = params.tasks[i];
 				const name = `wt-${Date.now()}-${i}`;
-				await pi.exec("git", ["worktree", "add", "-b", name, `../${name}`], { signal });
-				await pi.exec("cp", ["-r", ".aery", `../${name}/.aery`], { signal }).catch(() => {});
-				await pi.exec("tmux", ["new-window", "-c", `../${name}`, "-n", name, `aery --print -p "${task.replace(/"/g, '\\"')}"`], { signal });
+				await aery.exec("git", ["worktree", "add", "-b", name, `../${name}`], { signal });
+				await aery.exec("cp", ["-r", ".aery", `../${name}/.aery`], { signal }).catch(() => {});
+				await aery.exec("tmux", ["new-window", "-c", `../${name}`, "-n", name, `aery --print -p "${task.replace(/"/g, '\\"')}"`], { signal });
 				results.push(`[${name}] ${task.slice(0, 60)}`);
 			}
 			return { content: [{ type: "text", text: `Spawned ${params.tasks.length} parallel agents:\n${results.join("\n")}` }] };

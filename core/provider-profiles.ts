@@ -95,7 +95,7 @@ export default function (aery: ExtensionAPI) {
 		const p = d.profiles.find(x => x.name === d.active);
 		if (!p) return;
 		const model = ctx.modelRegistry.find(p.provider, p.modelId);
-		if (model) await pi.setModel(model);
+		if (model) await aery.setModel(model);
 	});
 
 	// Always capture last prompt for retry after failover
@@ -138,7 +138,7 @@ export default function (aery: ExtensionAPI) {
 
 		if (target && target.id !== ctx.model?.id) {
 			autoRouterSwitching = true;
-			await pi.setModel(target);
+			await aery.setModel(target);
 			autoRouterSwitching = false;
 			ctx.ui.notify(`Auto: ${task} → ${target.id}${confirmed.length > 0 ? " ✓" : ""}`, "info");
 		}
@@ -180,7 +180,7 @@ export default function (aery: ExtensionAPI) {
 			ctx.ui.notify(`Auto: ${cur.id} failed (${event.status}), retrying with ${next.id}...`, "warning");
 			justFailedOver = true;
 			autoRouterSwitching = true;
-			await pi.setModel(next);
+			await aery.setModel(next);
 			autoRouterSwitching = false;
 			// Retry the same prompt on the new model
 			if (lastPrompt) {
@@ -293,7 +293,7 @@ export default function (aery: ExtensionAPI) {
 				const newModel = ctx.modelRegistry.find(name, modelId);
 				if (newModel) {
 					autoRouterSwitching = true;
-					await pi.setModel(newModel);
+					await aery.setModel(newModel);
 					autoRouterSwitching = false;
 					ctx.ui.notify(`Switched to ${name}/${modelId}`, "info");
 				} else {
@@ -376,7 +376,7 @@ export default function (aery: ExtensionAPI) {
 				if (!profile) return;
 				const model = ctx.modelRegistry.find(profile.provider, profile.modelId);
 				if (!model) { ctx.ui.notify(`Model not found. Restart aery after adding new providers.`, "warning"); return; }
-				const ok = await pi.setModel(model);
+				const ok = await aery.setModel(model);
 				if (ok) {
 					autoEnabled = false;
 					d.active = profileName;

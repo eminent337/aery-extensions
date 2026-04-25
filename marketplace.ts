@@ -58,7 +58,7 @@ export default function (aery: ExtensionAPI) {
 			if (!choice) return;
 
 			if (choice.includes("List installed")) {
-				const result = await pi.exec("aery", ["list"]);
+				const result = await aery.exec("aery", ["list"]);
 				aery.sendUserMessage(`Installed packages:\n\n${result.stdout || "None"}`);
 				return;
 			}
@@ -80,7 +80,7 @@ export default function (aery: ExtensionAPI) {
 
 			ctx.ui.notify(`Installing ${packName}...`, "info");
 			const installUrl = pack.install || `https://github.com/${pack.source}`;
-			const result = await pi.exec("aery", ["install", installUrl]);
+			const result = await aery.exec("aery", ["install", installUrl]);
 			if (result.code === 0) {
 				ctx.ui.notify(`✓ ${packName} installed! Restart aery to activate.`, "info");
 			} else {

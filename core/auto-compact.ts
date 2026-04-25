@@ -1,8 +1,8 @@
 /**
- * Aery Auto-Compact Extension (Phase 1.1)
+ * Aery Auto-Compact Extension
  *
- * Adds warning + circuit breaker on top of Pi's built-in compaction.
- * Pi already auto-compacts — this adds:
+ * Adds warning + circuit breaker on top of Aery's built-in compaction.
+ * Aery already auto-compacts — this adds:
  * - Warning at contextWindow - 20,000 tokens
  * - Circuit breaker: stop after 3 consecutive failures
  * - Env overrides: AERY_AUTO_COMPACT_WINDOW, AERY_AUTOCOMPACT_PCT_OVERRIDE

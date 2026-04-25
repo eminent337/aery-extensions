@@ -74,10 +74,10 @@ export default function (aery: ExtensionAPI) {
 		}),
 		async execute(_id, params, signal, onUpdate, ctx) {
 			onUpdate?.({ content: [{ type: "text", text: "Checking graphify..." }], details: {} });
-			const installed = await ensureGraphify(ctx.exec);
+			const installed = await ensureGraphify(aery.exec.bind(aery));
 			if (!installed) {
 				onUpdate?.({ content: [{ type: "text", text: "Installing graphify..." }], details: {} });
-				const r = await installGraphify(ctx.exec);
+				const r = await installGraphify(aery.exec.bind(aery));
 				if (!r.ok) return { content: [{ type: "text" as const, text: `Install failed: ${r.error}\nRun: pip install graphifyy` }], details: {}, isError: true };
 			}
 
@@ -89,7 +89,7 @@ export default function (aery: ExtensionAPI) {
 			onUpdate?.({ content: [{ type: "text", text: `Building graph: ${args.join(" ")}` }], details: {} });
 
 			try {
-				const { stdout, stderr, exitCode } = await ctx.exec("python3", args, { timeout: 300_000, signal });
+				const { stdout, stderr, exitCode } = await aery.exec("python3", args, { timeout: 300_000, signal });
 				const out = stdout || stderr || "No output";
 				return {
 					content: [{ type: "text" as const, text: exitCode === 0 ? out : `Failed (exit ${exitCode}):\n${out}` }],
@@ -121,9 +121,9 @@ export default function (aery: ExtensionAPI) {
 				};
 			}
 
-			const installed = await ensureGraphify(ctx.exec);
+			const installed = await ensureGraphify(aery.exec.bind(aery));
 			if (!installed) {
-				const r = await installGraphify(ctx.exec);
+				const r = await installGraphify(aery.exec.bind(aery));
 				if (!r.ok) return { content: [{ type: "text" as const, text: `Install failed: ${r.error}` }], details: {}, isError: true };
 			}
 
@@ -134,7 +134,7 @@ export default function (aery: ExtensionAPI) {
 			onUpdate?.({ content: [{ type: "text", text: `Querying graph: "${params.question}"` }], details: {} });
 
 			try {
-				const { stdout, stderr, exitCode } = await ctx.exec("python3", args, { timeout: 60_000, signal });
+				const { stdout, stderr, exitCode } = await aery.exec("python3", args, { timeout: 60_000, signal });
 				const out = stdout || stderr || "No results";
 				return {
 					content: [{ type: "text" as const, text: out }],
@@ -159,10 +159,10 @@ export default function (aery: ExtensionAPI) {
 
 			ctx.ui.notify("Building knowledge graph...", "info");
 
-			const installed = await ensureGraphify(ctx.exec);
+			const installed = await ensureGraphify(aery.exec.bind(aery));
 			if (!installed) {
 				ctx.ui.notify("Installing graphify...", "info");
-				const r = await installGraphify(ctx.exec);
+				const r = await installGraphify(aery.exec.bind(aery));
 				if (!r.ok) { ctx.ui.notify(`Install failed: ${r.error}`, "error"); return; }
 			}
 
@@ -172,7 +172,7 @@ export default function (aery: ExtensionAPI) {
 			if (noViz) cmdArgs.push("--no-viz");
 
 			try {
-				const { stdout, exitCode } = await ctx.exec("python3", cmdArgs, { timeout: 300_000 });
+				const { stdout, exitCode } = await aery.exec("python3", cmdArgs, { timeout: 300_000 });
 				if (exitCode === 0) {
 					ctx.ui.notify("Knowledge graph built! See graphify-out/", "info");
 					aery.sendUserMessage(`Graphify completed:\n\n${stdout}`);

@@ -51,7 +51,7 @@ export default function (aery: ExtensionAPI) {
 		if (!taskPrompt || taskPrompt.length < 30) return;
 		if (/^(what|who|how|why|when|where|tell me|show me|explain|hi|hello|yes|no|okay|good|thanks|what was|what is|what are)/i.test(taskPrompt)) return;
 
-		const shouldSave = turnCount >= 5 && hadFailure;
+		const shouldSave = turnCount >= 3 && hadFailure;
 		if (!shouldSave) return;
 
 		const messages = event.messages || [];

@@ -5,7 +5,6 @@
       "description": "Essential extensions \u2014 auto-installed with Aery",
       "auto": true,
       "extensions": [
-        "auto-compact",
         "damage-control",
         "provider-profiles",
         "model-failover",

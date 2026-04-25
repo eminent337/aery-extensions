@@ -51,8 +51,9 @@ export default function (aery: ExtensionAPI) {
 				render(width: number): string[] {
 					const model = ctx.model;
 					const modelShort = getActiveModelShort(ctx);
-					const contextWindow = model?.contextWindow ?? 0;
-					const pct = contextWindow > 0 ? Math.round((cachedTokens / contextWindow) * 100) : 0;
+					const contextUsage = ctx.getContextUsage?.();
+					const pct = contextUsage?.percent != null ? Math.round(contextUsage.percent) : 0;
+					const hasContext = contextUsage?.percent != null;
 
 					const branch = footerData.getGitBranch();
 					const costStr = cachedCost > 0 ? ` $${cachedCost.toFixed(3)}` : "";
@@ -64,7 +65,7 @@ export default function (aery: ExtensionAPI) {
 						theme.fg("accent", "aery") +
 						theme.fg("dim", " · ") +
 						theme.fg("muted", modelShort) +
-						(contextWindow > 0
+						(hasContext
 							? theme.fg("dim", "  ") + theme.fg(pct > 80 ? "warning" : "dim", `◕ ${pct}%`)
 							: "");
 

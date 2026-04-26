@@ -58,29 +58,39 @@ function isInstalled(packName: string, pack: Pack): boolean {
 	return pkgs.some((p: string) => p.includes(pack.source));
 }
 
-async function installPack(packName: string, pack: Pack, aery: ExtensionAPI, ctx: any): Promise<boolean> {
-	if (pack.file) {
-		// Clone repo then wire specific file
+async function installPack(packName: string, pack: Pack, execFn: any, ctx: any): Promise<boolean> {
+	const repoDir = join(homedir(), ".aery", "agent", "git", "github.com", pack.source);
+
+	// Clone repo if not already present
+	if (!existsSync(repoDir)) {
 		const repoUrl = `https://github.com/${pack.source}`;
-		const cloneResult = await aery.exec("aery", ["install", repoUrl]);
+		const cloneResult = await execFn("git", ["clone", repoUrl, repoDir], { timeout: 60_000 });
 		if (cloneResult.exitCode !== 0) {
-			ctx.ui.notify(`Install failed: ${cloneResult.stderr?.slice(0, 100)}`, "error");
+			ctx.ui.notify(`Clone failed: ${cloneResult.stderr?.slice(0, 100)}`, "error");
 			return false;
 		}
-		const filePath = join(homedir(), ".aery", "agent", "git", "github.com", pack.source, pack.file);
-		if (existsSync(filePath)) {
-			const s = getSettings();
-			s.extensions = s.extensions ?? [];
-			if (!s.extensions.includes(filePath)) s.extensions.push(filePath);
-			saveSettings(s);
-			return true;
+	}
+
+	if (pack.file) {
+		// Wire specific file
+		const filePath = join(repoDir, pack.file);
+		if (!existsSync(filePath)) {
+			ctx.ui.notify(`File not found: ${filePath}`, "error");
+			return false;
 		}
-		ctx.ui.notify(`Cloned but file not found: ${filePath}`, "error");
-		return false;
+		const s = getSettings();
+		s.extensions = s.extensions ?? [];
+		if (!s.extensions.includes(filePath)) s.extensions.push(filePath);
+		saveSettings(s);
+		return true;
 	} else {
-		const installUrl = pack.install || `https://github.com/${pack.source}`;
-		const result = await aery.exec("aery", ["install", installUrl]);
-		return result.exitCode === 0;
+		// Wire whole package
+		const s = getSettings();
+		s.packages = s.packages ?? [];
+		const repoUrl = `https://github.com/${pack.source}`;
+		if (!s.packages.includes(repoUrl)) s.packages.push(repoUrl);
+		saveSettings(s);
+		return true;
 	}
 }
 
@@ -146,7 +156,7 @@ export default function (aery: ExtensionAPI) {
 				if (isInstalled(packName, pack)) { ctx.ui.notify(`${packName} is already installed.`, "info"); return; }
 
 				ctx.ui.notify(`Installing ${packName}...`, "info");
-				const ok = await installPack(packName, pack, aery, ctx);
+				const ok = await installPack(packName, pack, aery.exec.bind(aery), ctx);
 				if (ok) ctx.ui.notify(`✓ ${packName} installed! Restart Aery to activate.`, "info");
 				return;
 			}
@@ -226,7 +236,7 @@ export default function (aery: ExtensionAPI) {
 				const confirm = await ctx.ui.select(`Install "${packName}"?\n${pack.description}`, ["Yes, install", "Cancel"]);
 				if (!confirm || confirm === "Cancel") return;
 				ctx.ui.notify(`Installing ${packName}...`, "info");
-				const ok = await installPack(packName, pack, aery, ctx);
+				const ok = await installPack(packName, pack, aery.exec.bind(aery), ctx);
 				if (ok) ctx.ui.notify(`✓ ${packName} installed! Restart Aery.`, "info");
 			}
 		},

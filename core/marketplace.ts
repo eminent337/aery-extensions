@@ -16,6 +16,7 @@ interface Pack {
 	source: string;
 	install?: string;
 	file?: string;
+	postInstall?: string;
 	extensions?: string[];
 	auto?: boolean;
 	coming_soon?: boolean;
@@ -85,6 +86,7 @@ async function installPack(packName: string, pack: Pack, execFn: any, ctx: any):
 		s.extensions = s.extensions ?? [];
 		if (!s.extensions.includes(filePath)) s.extensions.push(filePath);
 		saveSettings(s);
+		await runPostInstall(packName);
 		return true;
 	} else {
 		// Wire whole package

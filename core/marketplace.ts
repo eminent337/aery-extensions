@@ -157,7 +157,9 @@ export default function (aery: ExtensionAPI) {
 
 				ctx.ui.notify(`Installing ${packName}...`, "info");
 				const ok = await installPack(packName, pack, aery.exec.bind(aery), ctx);
-				if (ok) ctx.ui.notify(`✓ ${packName} installed! Restart Aery to activate.`, "info");
+				if (ok) { ctx.ui.notify(`✓ ${packName} installed!`, "info"); aery.sendUserMessage(`✅ **${packName}** installed successfully.
+
+Restart Aery to activate it.`); } else { aery.sendUserMessage(`❌ Failed to install **${packName}**.`); }
 				return;
 			}
 
@@ -231,7 +233,9 @@ export default function (aery: ExtensionAPI) {
 				const confirm = await ctx.ui.select(`"${packName}" is installed. Uninstall?`, ["Yes, uninstall", "Cancel"]);
 				if (!confirm || confirm === "Cancel") return;
 				const removed = uninstallPack(packName, pack, ctx);
-				ctx.ui.notify(removed ? `✓ ${packName} uninstalled. Restart Aery.` : `Not found in settings.`, removed ? "info" : "warning");
+				if (removed) { ctx.ui.notify(`✓ ${packName} uninstalled`, "info"); aery.sendUserMessage(`✅ **${packName}** uninstalled.
+
+Restart Aery to apply.`); } else { aery.sendUserMessage(`⚠️ **${packName}** was not found in settings.`); }
 			} else {
 				const confirm = await ctx.ui.select(`Install "${packName}"?\n${pack.description}`, ["Yes, install", "Cancel"]);
 				if (!confirm || confirm === "Cancel") return;

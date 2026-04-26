@@ -28,18 +28,25 @@ async function ensureGraphify(exec: any): Promise<boolean> {
 }
 
 async function installGraphify(exec: any): Promise<{ ok: boolean; error?: string }> {
-	// Try python3 -m pip first (always works if python3 is installed), then pip3/pip
-	for (const [cmd, args] of [
+	// Try multiple pip invocations to handle Ubuntu 24.04+ system Python restrictions
+	const attempts = [
+		["python3", ["-m", "pip", "install", "graphifyy", "--quiet", "--break-system-packages"]],
+		["python3", ["-m", "pip", "install", "graphifyy", "--quiet", "--user"]],
 		["python3", ["-m", "pip", "install", "graphifyy", "--quiet"]],
+		["pip3", ["install", "graphifyy", "--quiet", "--break-system-packages"]],
+		["pip3", ["install", "graphifyy", "--quiet", "--user"]],
 		["pip3", ["install", "graphifyy", "--quiet"]],
-		["pip", ["install", "graphifyy", "--quiet"]],
-	] as [string, string[]][]) {
+		["pip", ["install", "graphifyy", "--quiet", "--break-system-packages"]],
+		["pip", ["install", "graphifyy", "--quiet", "--user"]],
+	] as [string, string[]][];
+
+	for (const [cmd, args] of attempts) {
 		try {
 			const { exitCode } = await exec(cmd, args, { timeout: 60_000 });
 			if (exitCode === 0) return { ok: true };
 		} catch { continue; }
 	}
-	return { ok: false, error: "pip not found. Install manually: python3 -m pip install graphifyy" };
+	return { ok: false, error: "Could not install graphifyy. Try manually: python3 -m pip install graphifyy --break-system-packages" };
 }
 
 function loadGraphSummary(cwd: string): string | null {

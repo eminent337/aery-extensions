@@ -77,23 +77,6 @@ export default function (aery: ExtensionAPI) {
 
 		const graphifyInstalled = await isGraphifyInstalled();
 
-		// Register /graphify command only if graphify is installed
-		if (graphifyInstalled) {
-			aery.registerCommand("graphify", {
-				description: "Set up graphify skill for automatic knowledge graph building",
-				handler: async (_args, ctx2) => {
-					const { cmd, baseArgs } = findGraphify();
-					ctx2.ui.notify("Installing graphify skill...", "info");
-					try {
-						const { exitCode } = await aery.exec(cmd, [...baseArgs, "install", "--platform", "codex"], { timeout: 30_000 });
-						ctx2.ui.notify(exitCode === 0 ? "✓ Graphify skill installed!" : "Skill install failed", exitCode === 0 ? "info" : "error");
-					} catch (e) {
-						ctx2.ui.notify("Error installing skill", "error");
-					}
-				},
-			});
-		}
-
 		// Auto-load graph summary if present
 		const cwd = ctx.sessionManager?.getCwd?.() ?? process.cwd();
 		const summary = loadGraphSummary(cwd);

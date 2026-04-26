@@ -202,9 +202,10 @@ export default function (aery: ExtensionAPI) {
 			// /marketplace list
 			if (subcommand === "list") {
 				const installed = availablePacks.filter(([name, p]) => isInstalled(name, p)).map(([name]) => name);
-				aery.sendUserMessage(installed.length > 0
-					? `Installed extensions:\n\n${installed.join("\n")}`
-					: "No extensions installed via marketplace.");
+				const msg = installed.length > 0
+					? `Installed: ${installed.join(", ")}`
+					: "No extensions installed via marketplace.";
+				ctx.ui.notify(msg, "info");
 				return;
 			}
 
@@ -223,7 +224,7 @@ export default function (aery: ExtensionAPI) {
 
 			if (choice.includes("List installed")) {
 				const installed = availablePacks.filter(([name, p]) => isInstalled(name, p)).map(([name]) => name);
-				aery.sendUserMessage(installed.length > 0 ? `Installed:\n\n${installed.join("\n")}` : "None installed.");
+				ctx.ui.notify(installed.length > 0 ? `Installed: ${installed.join(", ")}` : "None installed.", "info");
 				return;
 			}
 

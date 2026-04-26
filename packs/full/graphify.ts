@@ -1,163 +1,49 @@
 /**
  * Graphify extension for Aery
- * Turns any folder of files into a queryable knowledge graph.
- * Source: https://github.com/safishamsi/graphify
- * Requires: pipx install graphifyy  OR  pip install graphifyy
+ * /graphify — triggers the agent to build a knowledge graph using the graphify skill
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync } from "node:fs";
 import type { ExtensionAPI } from "@eminent337/aery";
-import { Type } from "@sinclair/typebox";
 
-const REGISTRY_URL = "https://raw.githubusercontent.com/eminent337/aery-extensions/main/registry.json";
-
-// Find graphify binary (handles pipx, pip --user, system installs)
-function findGraphify(): { cmd: string; baseArgs: string[] } {
+function findGraphify(): string | null {
 	const home = process.env.HOME || "";
-	const candidates = [
-		`${home}/.local/bin/graphify`,
-		"/usr/local/bin/graphify",
-		"/usr/bin/graphify",
-	];
-	for (const p of candidates) {
-		if (existsSync(p)) return { cmd: p, baseArgs: [] };
-	}
-	// Fallback: python3 -m graphify
-	return { cmd: "python3", baseArgs: ["-m", "graphify"] };
-}
-
-async function isGraphifyInstalled(): Promise<boolean> {
-	const home = process.env.HOME || "";
-	const candidates = [
-		`${home}/.local/bin/graphify`,
-		"/usr/local/bin/graphify",
-		"/usr/bin/graphify",
-	];
-	for (const p of candidates) {
-		if (existsSync(p)) return true;
-	}
-	return false;
-}
-
-async function installGraphify(exec: any): Promise<{ ok: boolean; error?: string }> {
-	const attempts = [
-		["python3", ["-m", "pip", "install", "graphifyy", "--quiet", "--break-system-packages"]],
-		["python3", ["-m", "pip", "install", "graphifyy", "--quiet", "--user"]],
-		["python3", ["-m", "pip", "install", "graphifyy", "--quiet"]],
-		["pip3", ["install", "graphifyy", "--quiet", "--break-system-packages"]],
-		["pip3", ["install", "graphifyy", "--quiet", "--user"]],
-		["pip3", ["install", "graphifyy", "--quiet"]],
-		["pipx", ["install", "graphifyy"]],
-	] as [string, string[]][];
-
-	for (const [cmd, args] of attempts) {
-		try {
-			const { exitCode } = await exec(cmd, args, { timeout: 60_000 });
-			if (exitCode === 0) return { ok: true };
-		} catch { continue; }
-	}
-	return { ok: false, error: "Could not install graphifyy automatically.\n\nTry:\n  pipx install graphifyy\n  python3 -m pip install graphifyy --break-system-packages" };
-}
-
-function loadGraphSummary(cwd: string): string | null {
-	const reportPath = join(cwd, "graphify-out", "GRAPH_REPORT.md");
-	if (existsSync(reportPath)) {
-		try { return readFileSync(reportPath, "utf-8").slice(0, 2000); } catch {}
+	for (const p of [`${home}/.local/bin/graphify`, "/usr/local/bin/graphify", "/usr/bin/graphify"]) {
+		if (existsSync(p)) return p;
 	}
 	return null;
 }
 
+async function ensureSkill(bin: string, exec: any): Promise<void> {
+	const skillPath = `${process.env.HOME}/.kiro/skills/graphify/SKILL.md`;
+	if (!existsSync(skillPath)) {
+		await exec(bin, ["install", "--platform", "kiro"], { timeout: 30_000 }).catch(() => {});
+	}
+}
+
 export default function (aery: ExtensionAPI) {
-	let checkedDeps = false;
-
-	aery.on("session_start", async (_event, ctx) => {
-		if (!ctx.hasUI || checkedDeps) return;
-		checkedDeps = true;
-
-		const graphifyInstalled = await isGraphifyInstalled();
-
-		// Auto-load graph summary if present
-		const cwd = ctx.sessionManager?.getCwd?.() ?? process.cwd();
-		const summary = loadGraphSummary(cwd);
-		if (summary && graphifyInstalled) {
-			ctx.ui.notify("📊 Graphify knowledge graph found", "info");
-		}
+	aery.on("session_start", async (_event, _ctx) => {
+		const bin = findGraphify();
+		if (!bin) return;
+		await ensureSkill(bin, aery.exec.bind(aery));
 	});
 
-	// graphify tool — install skill and query
-	aery.registerTool({
-		name: "graphify",
-		description: "Install the graphify skill for knowledge graph building, or query an existing graph. Graphify works by installing a skill that guides the agent to build knowledge graphs from codebases.",
-		parameters: Type.Object({
-			action: Type.String({ description: "'install' to set up graphify skill, 'query' to query existing graph, 'watch' to watch for changes" }),
-			question: Type.Optional(Type.String({ description: "Question for query action" })),
-			path: Type.Optional(Type.String({ description: "Path for watch action" })),
-		}),
-		async execute(_id, params, signal, onUpdate) {
-			onUpdate?.({ content: [{ type: "text", text: "Checking graphify..." }], details: {} });
-
-			const installed = await isGraphifyInstalled();
-			if (!installed) {
-				onUpdate?.({ content: [{ type: "text", text: "Installing graphify..." }], details: {} });
-				const r = await installGraphify(aery.exec.bind(aery));
-				if (!r.ok) return { content: [{ type: "text" as const, text: `Install failed: ${r.error}` }], details: {}, isError: true };
+	aery.registerCommand("graphify", {
+		description: "Build a knowledge graph of the current project",
+		handler: async (args, ctx) => {
+			const bin = findGraphify();
+			if (!bin) {
+				ctx.ui.notify("graphify not installed. Run: pipx install graphifyy", "warning");
+				return;
 			}
-
-			const { cmd, baseArgs } = findGraphify();
-
-			if (params.action === "query" && params.question) {
-				const { stdout, exitCode } = await aery.exec(cmd, [...baseArgs, "query", params.question], { timeout: 60_000, signal });
-				return { content: [{ type: "text" as const, text: stdout || "No results" }], details: { exitCode }, isError: exitCode !== 0 };
-			}
-
-			if (params.action === "watch" && params.path) {
-				aery.exec(cmd, [...baseArgs, "watch", params.path], { timeout: 0 }).catch(() => {});
-				return { content: [{ type: "text" as const, text: `Watching ${params.path} for changes...` }], details: {} };
-			}
-
-			// Default: install skill
-			const { stdout, exitCode } = await aery.exec(cmd, [...baseArgs, "install", "--platform", "codex"], { timeout: 30_000, signal });
-			return {
-				content: [{ type: "text" as const, text: exitCode === 0 ? "Graphify skill installed. The agent will now build knowledge graphs automatically when analyzing codebases." : `Install failed:\n${stdout}` }],
-				details: { exitCode },
-				isError: exitCode !== 0,
-			};
+			await ensureSkill(bin, aery.exec.bind(aery));
+			const path = args.trim() || ".";
+			const flags = [];
+			if (args.includes("--deep")) flags.push("--mode deep");
+			if (args.includes("--update")) flags.push("--update");
+			if (args.includes("--no-viz")) flags.push("--no-viz");
+			const flagStr = flags.length ? ` ${flags.join(" ")}` : "";
+			aery.sendUserMessage(`/graphify ${path}${flagStr}`);
 		},
 	});
-
-	// graphify_query tool
-	aery.registerTool({
-		name: "graphify_query",
-		description: "Query an existing graphify knowledge graph. Token-efficient for large codebases.",
-		parameters: Type.Object({
-			question: Type.String({ description: "Question to ask the knowledge graph" }),
-			path: Type.Optional(Type.String({ description: "Path where graphify-out/ exists." })),
-			mode: Type.Optional(Type.String({ description: "'bfs' (default) or 'dfs'" })),
-		}),
-		async execute(_id, params, signal, onUpdate) {
-			const graphPath = join(params.path ?? ".", "graphify-out", "graph.json");
-			if (!existsSync(graphPath)) {
-				return { content: [{ type: "text" as const, text: `No graph found. Run /graphify first.` }], details: {}, isError: true };
-			}
-
-			const { cmd, baseArgs } = findGraphify();
-			const args = [...baseArgs, "query", params.question];
-			if (params.mode === "dfs") args.push("--dfs");
-
-			onUpdate?.({ content: [{ type: "text", text: `Querying: "${params.question}"` }], details: {} });
-
-			try {
-				const { stdout, stderr, exitCode } = await aery.exec(cmd, args, { timeout: 60_000, signal });
-				return {
-					content: [{ type: "text" as const, text: stdout || stderr || "No results" }],
-					details: { exitCode },
-					isError: exitCode !== 0,
-				};
-			} catch (e: any) {
-				return { content: [{ type: "text" as const, text: `Error: ${e.message}` }], details: {}, isError: true };
-			}
-		},
-	});
-
 }

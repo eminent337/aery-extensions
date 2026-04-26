@@ -83,15 +83,14 @@ export default function (aery: ExtensionAPI) {
 		}
 	});
 
-	// graphify tool — build the graph
+	// graphify tool — install skill and query
 	aery.registerTool({
 		name: "graphify",
-		description: "Build a knowledge graph from any folder of files (code, docs, papers, images, video). Use when asked to analyze a codebase, understand architecture, or map dependencies.",
+		description: "Install the graphify skill for knowledge graph building, or query an existing graph. Graphify works by installing a skill that guides the agent to build knowledge graphs from codebases.",
 		parameters: Type.Object({
-			path: Type.Optional(Type.String({ description: "Path to analyze. Defaults to current directory." })),
-			mode: Type.Optional(Type.String({ description: "'fast' (default) or 'deep'" })),
-			update: Type.Optional(Type.Boolean({ description: "Incremental update only" })),
-			no_viz: Type.Optional(Type.Boolean({ description: "Skip HTML visualization" })),
+			action: Type.String({ description: "'install' to set up graphify skill, 'query' to query existing graph, 'watch' to watch for changes" }),
+			question: Type.Optional(Type.String({ description: "Question for query action" })),
+			path: Type.Optional(Type.String({ description: "Path for watch action" })),
 		}),
 		async execute(_id, params, signal, onUpdate) {
 			onUpdate?.({ content: [{ type: "text", text: "Checking graphify..." }], details: {} });
@@ -104,24 +103,24 @@ export default function (aery: ExtensionAPI) {
 			}
 
 			const { cmd, baseArgs } = findGraphify();
-			const args = [...baseArgs, params.path ?? "."];
-			if (params.mode === "deep") args.push("--mode", "deep");
-			if (params.update) args.push("--update");
-			if (params.no_viz) args.push("--no-viz");
 
-			onUpdate?.({ content: [{ type: "text", text: `Building graph...` }], details: {} });
-
-			try {
-				const { stdout, stderr, exitCode } = await aery.exec(cmd, args, { timeout: 300_000, signal });
-				const out = stdout || stderr || "No output";
-				return {
-					content: [{ type: "text" as const, text: exitCode === 0 ? out : `Failed:\n${out}` }],
-					details: { exitCode, path: params.path ?? "." },
-					isError: exitCode !== 0,
-				};
-			} catch (e: any) {
-				return { content: [{ type: "text" as const, text: `Error: ${e.message}` }], details: {}, isError: true };
+			if (params.action === "query" && params.question) {
+				const { stdout, exitCode } = await aery.exec(cmd, [...baseArgs, "query", params.question], { timeout: 60_000, signal });
+				return { content: [{ type: "text" as const, text: stdout || "No results" }], details: { exitCode }, isError: exitCode !== 0 };
 			}
+
+			if (params.action === "watch" && params.path) {
+				aery.exec(cmd, [...baseArgs, "watch", params.path], { timeout: 0 }).catch(() => {});
+				return { content: [{ type: "text" as const, text: `Watching ${params.path} for changes...` }], details: {} };
+			}
+
+			// Default: install skill
+			const { stdout, exitCode } = await aery.exec(cmd, [...baseArgs, "install", "--platform", "codex"], { timeout: 30_000, signal });
+			return {
+				content: [{ type: "text" as const, text: exitCode === 0 ? "Graphify skill installed. The agent will now build knowledge graphs automatically when analyzing codebases." : `Install failed:\n${stdout}` }],
+				details: { exitCode },
+				isError: exitCode !== 0,
+			};
 		},
 	});
 
@@ -161,10 +160,10 @@ export default function (aery: ExtensionAPI) {
 
 	// /graphify command
 	aery.registerCommand("graphify", {
-		description: "Build a knowledge graph. Usage: /graphify [path] [--deep] [--update] [--no-viz]",
+		description: "Install graphify skill or query the knowledge graph. Usage: /graphify [install|query \"question\"|watch <path>]",
 		handler: async (args, ctx) => {
 			const parts = args.trim().split(/\s+/).filter(Boolean);
-			const path = parts.find(p => !p.startsWith("--")) ?? ".";
+			const subcommand = parts[0] ?? "install";
 
 			const installed = await isGraphifyInstalled();
 			if (!installed) {
@@ -174,18 +173,34 @@ export default function (aery: ExtensionAPI) {
 			}
 
 			const { cmd, baseArgs } = findGraphify();
-			const cmdArgs = [...baseArgs, path];
-			if (parts.includes("--deep")) cmdArgs.push("--mode", "deep");
-			if (parts.includes("--update")) cmdArgs.push("--update");
-			if (parts.includes("--no-viz")) cmdArgs.push("--no-viz");
 
-			ctx.ui.notify("Building knowledge graph...", "info");
+			if (subcommand === "query") {
+				const question = parts.slice(1).join(" ");
+				if (!question) { ctx.ui.notify("Usage: /graphify query \"your question\"", "warning"); return; }
+				ctx.ui.notify(`Querying graph...`, "info");
+				try {
+					const { stdout, exitCode } = await aery.exec(cmd, [...baseArgs, "query", question], { timeout: 60_000 });
+					if (exitCode === 0) aery.sendUserMessage(`Graph query result:\n\n${stdout}`);
+					else ctx.ui.notify("Query failed", "error");
+				} catch (e: any) { ctx.ui.notify(`Error: ${e.message}`, "error"); }
+				return;
+			}
+
+			if (subcommand === "watch") {
+				const path = parts[1] ?? ".";
+				ctx.ui.notify(`Starting graphify watch on ${path}...`, "info");
+				aery.exec(cmd, [...baseArgs, "watch", path], { timeout: 0 }).catch(() => {});
+				return;
+			}
+
+			// Default: install the skill for Aery (writes to AGENTS.md)
+			ctx.ui.notify("Installing graphify skill for Aery...", "info");
 			try {
-				const { stdout, exitCode } = await aery.exec(cmd, cmdArgs, { timeout: 300_000 });
+				const { exitCode, stdout } = await aery.exec(cmd, [...baseArgs, "install", "--platform", "codex"], { timeout: 30_000 });
 				if (exitCode === 0) {
-					ctx.ui.notify("✓ Knowledge graph built! See graphify-out/", "info");
+					ctx.ui.notify("✓ Graphify skill installed! The agent will now build knowledge graphs automatically.", "info");
 				} else {
-					ctx.ui.notify("Graphify failed — check output", "error");
+					ctx.ui.notify("Skill install failed", "error");
 				}
 			} catch (e: any) {
 				ctx.ui.notify(`Error: ${e.message}`, "error");

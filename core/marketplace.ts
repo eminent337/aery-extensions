@@ -86,7 +86,12 @@ async function installPack(packName: string, pack: Pack, execFn: any, ctx: any):
 		s.extensions = s.extensions ?? [];
 		if (!s.extensions.includes(filePath)) s.extensions.push(filePath);
 		saveSettings(s);
-		await runPostInstall(packName);
+		if (pack.postInstall) {
+			const parts = pack.postInstall.split(" ");
+			await execFn(parts[0], parts.slice(1), { timeout: 60_000 }).catch((e: any) =>
+				ctx.ui.notify(`postInstall warning: ${e}`, "warning")
+			);
+		}
 		return true;
 	} else {
 		// Wire whole package

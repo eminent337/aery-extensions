@@ -63,32 +63,10 @@ export default function (aery: ExtensionAPI) {
 
 	let checkedDeps = false;
 
-	// Check dependencies on session start and warn if missing
+	// Auto-load graph summary on session start if present
 	aery.on("session_start", async (_event, ctx) => {
 		if (!ctx.hasUI || checkedDeps) return;
 		checkedDeps = true;
-
-		// Check graphify directly (implies python3 is present)
-		let hasGraphify = false;
-		try {
-			const { exitCode } = await aery.exec("python3", ["-m", "graphify", "--help"], { timeout: 8000 });
-			hasGraphify = exitCode === 0;
-		} catch {}
-
-		if (!hasGraphify) {
-			// Check if python3 exists at all
-			let hasPython = false;
-			try {
-				const { exitCode } = await aery.exec("python3", ["--version"], { timeout: 5000 });
-				hasPython = exitCode === 0;
-			} catch {}
-
-			if (!hasPython) {
-				ctx.ui.notify("⚠️ Graphify requires Python 3. Install: sudo apt install python3 python3-pip", "warning");
-			} else {
-				ctx.ui.notify("⚠️ Graphify not installed. Run: pip install graphifyy", "warning");
-			}
-		}
 
 		// Auto-load graph summary if present
 		const cwd = ctx.sessionManager?.getCwd?.() ?? process.cwd();

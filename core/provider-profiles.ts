@@ -44,7 +44,8 @@ function addToEnabledModels(provider: string, modelId: string) {
 		const settingsPath = join(homedir(), ".aery", "agent", "settings.json");
 		const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
 		const entry = `${provider}/${modelId}`;
-		if (!settings.enabledModels) settings.enabledModels = [];
+		// Only append if enabledModels already exists — don't create a whitelist from scratch
+		if (!settings.enabledModels) return;
 		if (!settings.enabledModels.includes(entry)) {
 			settings.enabledModels.push(entry);
 			writeFileSync(settingsPath, JSON.stringify(settings, null, 2));

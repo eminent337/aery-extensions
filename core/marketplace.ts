@@ -61,7 +61,7 @@ function isInstalled(packName: string, pack: Pack): boolean {
 async function installPack(packName: string, pack: Pack, execFn: any, ctx: any): Promise<boolean> {
 	const repoDir = join(homedir(), ".aery", "agent", "git", "github.com", pack.source);
 
-	// Clone repo if not already present
+	// Clone repo if not already present, otherwise pull latest
 	if (!existsSync(repoDir)) {
 		const repoUrl = `https://github.com/${pack.source}`;
 		const cloneResult = await execFn("git", ["clone", repoUrl, repoDir], { timeout: 60_000 });
@@ -69,6 +69,9 @@ async function installPack(packName: string, pack: Pack, execFn: any, ctx: any):
 			ctx.ui.notify(`Clone failed: ${cloneResult.stderr?.slice(0, 100)}`, "error");
 			return false;
 		}
+	} else {
+		// Already cloned — pull latest silently
+		await execFn("git", ["-C", repoDir, "pull", "--ff-only"], { timeout: 30_000 }).catch(() => {});
 	}
 
 	if (pack.file) {

@@ -20,7 +20,7 @@ import { Type } from "@sinclair/typebox";
 
 async function ensureGraphify(exec: any): Promise<boolean> {
 	try {
-		const { exitCode } = await exec("python3", ["-m", "graphify", "--version"], { timeout: 5000 });
+		const { exitCode } = await exec("python3", ["-m", "graphify", "--help"], { timeout: 5000 });
 		return exitCode === 0;
 	} catch {
 		return false;
@@ -71,7 +71,7 @@ export default function (aery: ExtensionAPI) {
 		// Check graphify directly (implies python3 is present)
 		let hasGraphify = false;
 		try {
-			const { exitCode } = await aery.exec("python3", ["-m", "graphify", "--version"], { timeout: 8000 });
+			const { exitCode } = await aery.exec("python3", ["-m", "graphify", "--help"], { timeout: 8000 });
 			hasGraphify = exitCode === 0;
 		} catch {}
 

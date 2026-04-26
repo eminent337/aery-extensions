@@ -75,10 +75,29 @@ export default function (aery: ExtensionAPI) {
 		if (!ctx.hasUI || checkedDeps) return;
 		checkedDeps = true;
 
+		const graphifyInstalled = await isGraphifyInstalled();
+
+		// Register /graphify command only if graphify is installed
+		if (graphifyInstalled) {
+			aery.registerCommand("graphify", {
+				description: "Set up graphify skill for automatic knowledge graph building",
+				handler: async (_args, ctx2) => {
+					const { cmd, baseArgs } = findGraphify();
+					ctx2.ui.notify("Installing graphify skill...", "info");
+					try {
+						const { exitCode } = await aery.exec(cmd, [...baseArgs, "install", "--platform", "codex"], { timeout: 30_000 });
+						ctx2.ui.notify(exitCode === 0 ? "✓ Graphify skill installed!" : "Skill install failed", exitCode === 0 ? "info" : "error");
+					} catch (e) {
+						ctx2.ui.notify("Error installing skill", "error");
+					}
+				},
+			});
+		}
+
 		// Auto-load graph summary if present
 		const cwd = ctx.sessionManager?.getCwd?.() ?? process.cwd();
 		const summary = loadGraphSummary(cwd);
-		if (summary && await isGraphifyInstalled()) {
+		if (summary && graphifyInstalled) {
 			ctx.ui.notify("📊 Graphify knowledge graph found", "info");
 		}
 	});
@@ -158,28 +177,24 @@ export default function (aery: ExtensionAPI) {
 		},
 	});
 
-	// /graphify command - install skill into AGENTS.md
-	aery.registerCommand("graphify", {
-		description: "Set up graphify skill so the agent can build knowledge graphs automatically",
-		handler: async (args, ctx) => {
-			const installed = await isGraphifyInstalled();
-			if (!installed) {
-				ctx.ui.notify("graphify not installed. Run: pipx install graphifyy", "warning");
-				return;
-			}
+	// Register /graphify command only if graphify binary is present
+	aery.on("session_start", async (_event, ctx) => {
+		if (!ctx.hasUI || checkedDeps) return;
+		checkedDeps = true;
 
-			const { cmd, baseArgs } = findGraphify();
-			ctx.ui.notify("Installing graphify skill...", "info");
-			try {
-				const { exitCode } = await aery.exec(cmd, [...baseArgs, "install", "--platform", "codex"], { timeout: 30_000 });
-				if (exitCode === 0) {
-					ctx.ui.notify("✓ Graphify skill installed! Ask the agent to build a knowledge graph.", "info");
-				} else {
-					ctx.ui.notify("Skill install failed", "error");
-				}
-			} catch (e: any) {
-				ctx.ui.notify(`Error: ${e.message}`, "error");
-			}
-		},
-	});
+		if (await isGraphifyInstalled()) {
+			aery.registerCommand("graphify", {
+				description: "Set up graphify skill so the agent can build knowledge graphs automatically",
+				handler: async (_args, ctx2) => {
+					const { cmd, baseArgs } = findGraphify();
+					ctx2.ui.notify("Installing graphify skill...", "info");
+					try {
+						const { exitCode } = await aery.exec(cmd, [...baseArgs, "install", "--platform", "codex"], { timeout: 30_000 });
+						ctx2.ui.notify(exitCode === 0 ? "✓ Graphify skill installed!" : "Skill install failed", exitCode === 0 ? "info" : "error");
+					} catch (e: any) {
+						ctx2.ui.notify(`Error: ${e.message}`, "error");
+					}
+				},
+			});
+		}
 }

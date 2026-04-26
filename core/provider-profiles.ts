@@ -64,9 +64,34 @@ function saveProfile(name: string, provider: string, modelId: string) {
 
 function deleteProfile(name: string) {
 	const d = loadProfiles();
+	const profile = d.profiles.find(p => p.name === name);
 	d.profiles = d.profiles.filter(p => p.name !== name);
 	if (d.active === name) d.active = d.profiles[0]?.name;
 	saveProfiles(d);
+
+	if (profile) {
+		// Remove from models.json
+		const m = loadModels();
+		if (m.providers?.[profile.provider]) {
+			delete m.providers[profile.provider];
+			saveModels(m);
+		}
+
+		// Remove from enabledModels in settings.json
+		try {
+			const settingsPath = join(homedir(), ".aery", "agent", "settings.json");
+			const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
+			if (settings.enabledModels) {
+				const entry = `${profile.provider}/${profile.modelId}`;
+				settings.enabledModels = settings.enabledModels.filter((e: string) => e !== entry);
+				if (settings.enabledModels.length === 0) delete settings.enabledModels;
+			}
+			if (settings.defaultModel === `${profile.provider}/${profile.modelId}`) {
+				delete settings.defaultModel;
+			}
+			writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+		} catch {}
+	}
 }
 
 // Auto-routing

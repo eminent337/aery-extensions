@@ -160,25 +160,4 @@ export default function (aery: ExtensionAPI) {
 		},
 	});
 
-	// Register /graphify command only if graphify binary is present
-	aery.on("session_start", async (_event, ctx) => {
-		if (!ctx.hasUI || checkedDeps) return;
-		checkedDeps = true;
-
-		if (await isGraphifyInstalled()) {
-			aery.registerCommand("graphify", {
-				description: "Set up graphify skill so the agent can build knowledge graphs automatically",
-				handler: async (_args, ctx2) => {
-					const { cmd, baseArgs } = findGraphify();
-					ctx2.ui.notify("Installing graphify skill...", "info");
-					try {
-						const { exitCode } = await aery.exec(cmd, [...baseArgs, "install", "--platform", "codex"], { timeout: 30_000 });
-						ctx2.ui.notify(exitCode === 0 ? "✓ Graphify skill installed!" : "Skill install failed", exitCode === 0 ? "info" : "error");
-					} catch (e: any) {
-						ctx2.ui.notify(`Error: ${e.message}`, "error");
-					}
-				},
-			});
-		}
-	});
 }

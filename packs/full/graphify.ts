@@ -19,12 +19,19 @@ import type { ExtensionAPI } from "@eminent337/aery";
 import { Type } from "@sinclair/typebox";
 
 async function ensureGraphify(exec: any): Promise<boolean> {
-	try {
-		const { exitCode } = await exec("python3", ["-m", "graphify", "--help"], { timeout: 5000 });
-		return exitCode === 0;
-	} catch {
-		return false;
+	// Try graphify binary first (pipx install), then python3 -m graphify
+	for (const [cmd, args] of [
+		["graphify", ["--help"]],
+		["/home/aryee/.local/bin/graphify", ["--help"]],
+		[`${process.env.HOME}/.local/bin/graphify`, ["--help"]],
+		["python3", ["-m", "graphify", "--help"]],
+	] as [string, string[]][]) {
+		try {
+			const { exitCode } = await exec(cmd, args, { timeout: 5000 });
+			if (exitCode === 0) return true;
+		} catch { continue; }
 	}
+	return false;
 }
 
 async function installGraphify(exec: any): Promise<{ ok: boolean; error?: string }> {

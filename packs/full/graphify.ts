@@ -28,7 +28,6 @@ async function ensureGraphify(exec: any): Promise<boolean> {
 }
 
 async function installGraphify(exec: any): Promise<{ ok: boolean; error?: string }> {
-	// Try multiple pip invocations to handle Ubuntu 24.04+ system Python restrictions
 	const attempts = [
 		["python3", ["-m", "pip", "install", "graphifyy", "--quiet", "--break-system-packages"]],
 		["python3", ["-m", "pip", "install", "graphifyy", "--quiet", "--user"]],
@@ -38,6 +37,7 @@ async function installGraphify(exec: any): Promise<{ ok: boolean; error?: string
 		["pip3", ["install", "graphifyy", "--quiet"]],
 		["pip", ["install", "graphifyy", "--quiet", "--break-system-packages"]],
 		["pip", ["install", "graphifyy", "--quiet", "--user"]],
+		["pipx", ["install", "graphifyy"]],
 	] as [string, string[]][];
 
 	for (const [cmd, args] of attempts) {
@@ -46,7 +46,7 @@ async function installGraphify(exec: any): Promise<{ ok: boolean; error?: string
 			if (exitCode === 0) return { ok: true };
 		} catch { continue; }
 	}
-	return { ok: false, error: "Could not install graphifyy. Try manually: python3 -m pip install graphifyy --break-system-packages" };
+	return { ok: false, error: "Could not install graphifyy automatically.\n\nTry one of:\n  pipx install graphifyy\n  python3 -m pip install graphifyy --break-system-packages\n  sudo apt install python3-pip && pip3 install graphifyy" };
 }
 
 function loadGraphSummary(cwd: string): string | null {

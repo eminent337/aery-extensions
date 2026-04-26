@@ -197,4 +197,5 @@ export default function (aery: ExtensionAPI) {
 				},
 			});
 		}
+	});
 }

@@ -185,8 +185,7 @@ export default function (aery: ExtensionAPI) {
 				if (exitCode === 0) {
 					ctx.ui.notify("✓ Knowledge graph built! See graphify-out/", "info");
 				} else {
-					ctx.ui.notify("Graphify failed", "error");
-					aery.sendUserMessage(`Graphify failed:\n\n${stdout}`);
+					ctx.ui.notify("Graphify failed — check output", "error");
 				}
 			} catch (e: any) {
 				ctx.ui.notify(`Error: ${e.message}`, "error");

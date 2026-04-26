@@ -54,9 +54,12 @@ function loadGraphSummary(cwd: string): string | null {
 
 export default function (aery: ExtensionAPI) {
 
+	let checkedDeps = false;
+
 	// Check dependencies on session start and warn if missing
 	aery.on("session_start", async (_event, ctx) => {
-		if (!ctx.hasUI) return;
+		if (!ctx.hasUI || checkedDeps) return;
+		checkedDeps = true;
 
 		// Check graphify directly (implies python3 is present)
 		let hasGraphify = false;

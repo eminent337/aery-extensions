@@ -6,7 +6,7 @@
 
 import type { ExtensionAPI } from "@eminent337/aery";
 import { Text } from "@eminent337/aery-tui";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 interface SearchResult { title: string; url: string; snippet: string; }
 

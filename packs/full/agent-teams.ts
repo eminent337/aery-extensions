@@ -8,7 +8,7 @@ import { existsSync, writeFileSync, readFileSync, mkdirSync, readdirSync, unlink
 import { join } from "node:path";
 import { homedir } from "node:os";
 import type { ExtensionAPI } from "@eminent337/aery";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 const TEAMS_DIR = join(homedir(), ".aery", "teams");
 const TASKS_DIR = join(homedir(), ".aery", "tasks");

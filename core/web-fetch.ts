@@ -5,7 +5,7 @@
  */
 
 import type { ExtensionAPI } from "@eminent337/aery";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 const MAX_BYTES = 50_000;
 

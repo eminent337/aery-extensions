@@ -8,7 +8,7 @@ import { existsSync, writeFileSync, readFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import type { ExtensionAPI } from "@eminent337/aery";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 const TODO_DIR = join(homedir(), ".aery", "agent", "todos");
 

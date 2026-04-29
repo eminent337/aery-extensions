@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync, unlink
 import { join } from "node:path";
 import { homedir } from "node:os";
 import type { ExtensionAPI } from "@eminent337/aery";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 const MAILBOX_DIR = join(homedir(), ".aery", "mailbox");
 const PENDING_DIR = join(MAILBOX_DIR, "pending");

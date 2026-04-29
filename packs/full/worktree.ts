@@ -8,7 +8,7 @@ import { existsSync, cpSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { homedir } from "node:os";
 import type { ExtensionAPI } from "@eminent337/aery";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 function run(cmd: string, cwd?: string): { ok: boolean; out: string; err: string } {
 	try {

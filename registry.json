@@ -23,7 +23,8 @@
         "help",
         "default-agents",
         "aery-doctor",
-        "aery-team"
+        "aery-team",
+        "subagent"
       ],
       "source": "eminent337/aery-extensions/core"
     },

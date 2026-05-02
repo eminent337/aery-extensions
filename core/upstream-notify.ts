@@ -20,8 +20,13 @@ async function checkUpstreamIssues(): Promise<string | null> {
 		if (!res.ok) return null;
 		const issues = await res.json() as any[];
 		if (!issues.length) return null;
-		const issue = issues[0];
-		return `Upstream sync needs review: ${issue.title} — ${issue.html_url}`;
+		// Only warn on actual conflicts/failures, not successful syncs
+		const conflict = issues.find((i: any) =>
+			i.title.includes("conflict") || i.title.includes("Manual") ||
+			i.title.includes("failed") || i.title.includes("No auto-mergeable")
+		);
+		if (!conflict) return null;
+		return `Upstream sync needs manual review: ${conflict.title} — ${conflict.html_url}`;
 	} catch {
 		return null;
 	}

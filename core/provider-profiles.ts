@@ -113,7 +113,7 @@ function classify(p: string): "complex"|"simple"|"unknown" {
 
 export default function (aery: ExtensionAPI) {
 
-	aery.on("session_start", async (_event, ctx) => {
+	aery.on("session_start", async (_event, _ctx) => {
 		const d = loadProfiles();
 		if (d.active === "auto") { autoEnabled = true; return; }
 		autoEnabled = false;
@@ -122,18 +122,12 @@ export default function (aery: ExtensionAPI) {
 		if (!p) return;
 
 		// Don't override if the user passed an explicit --model or --provider flag.
-		// Detect this by checking if the current model differs from settings.defaultModel.
-		try {
-			const settingsPath = join(homedir(), ".aery", "agent", "settings.json");
-			const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
-			const defaultModelId = settings.defaultModel as string | undefined;
-			const currentModelId = ctx.model?.id;
-			// If current model is already set and differs from the global default,
-			// the user explicitly chose a model via CLI — respect that choice.
-			if (currentModelId && defaultModelId && currentModelId !== defaultModelId) return;
-		} catch { /* if we can't read settings, proceed with profile */ }
+		const argv = process.argv;
+		const hasExplicitModel = argv.includes("--model") || argv.includes("-m") ||
+			argv.includes("--provider") || argv.some(a => /^[\w-]+\/[\w.-]+$/.test(a) && argv.indexOf(a) > 0);
+		if (hasExplicitModel) return;
 
-		const model = ctx.modelRegistry.find(p.provider, p.modelId);
+		const model = _ctx.modelRegistry.find(p.provider, p.modelId);
 		if (model) await aery.setModel(model);
 	});
 

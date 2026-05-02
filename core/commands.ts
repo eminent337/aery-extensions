@@ -81,8 +81,8 @@ export default function (aery: ExtensionAPI) {
 	});
 
 	// /copy — copy last assistant response to clipboard
-	aery.registerCommand("copy", {
-		description: "Copy last assistant response to clipboard",
+	aery.registerCommand("clip", {
+		description: "Copy last assistant response to clipboard (/clip)",
 		handler: async (_args, ctx) => {
 			const entries = ctx.sessionManager.getBranch().filter(e => e.type === "message");
 			const last = [...entries].reverse().find(e => (e as any).message?.role === "assistant");

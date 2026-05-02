@@ -78,7 +78,22 @@ export default function (aery: ExtensionAPI) {
 
 	aery.on("session_start", async (_event, ctx) => {
 		config = loadConfig();
-		if (!config) config = { enabled: false, simple_keywords: [], complex_keywords: [] };
+		if (!config) {
+			// Smart defaults: route based on message complexity using current model
+			// Users can override by creating ~/.aery/agent/auto-router.yaml
+			const currentModel = ctx.model;
+			if (currentModel) {
+				config = {
+					enabled: true,
+					fast_model: { provider: currentModel.provider, model_id: currentModel.id },
+					power_model: { provider: currentModel.provider, model_id: currentModel.id },
+					simple_keywords: ["explain", "summarize", "what is", "list", "show", "tell me", "describe"],
+					complex_keywords: ["implement", "build", "create", "refactor", "debug", "fix", "write", "migrate", "architect"],
+				};
+			} else {
+				config = { enabled: false, simple_keywords: [], complex_keywords: [] };
+			}
+		}
 		// Auto-enable if /provider selected "Auto"
 		try {
 			const profiles = JSON.parse(readFileSync(join(homedir(), ".aery", "agent", "profiles.json"), "utf-8"));
@@ -90,7 +105,7 @@ export default function (aery: ExtensionAPI) {
 		if (!config?.enabled || manualOverride) return;
 		if (!config.fast_model || !config.power_model) return;
 
-		const userMsg = event.messages.findLast((m) => m.role === "user");
+		const userMsg = [...event.messages].reverse().find((m) => m.role === "user");
 		if (!userMsg) return;
 
 		const text = userMsg.content

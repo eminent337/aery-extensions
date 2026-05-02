@@ -9,7 +9,11 @@
         "provider-profiles",
         "model-failover",
         "aery-header",
-        "aery-footer"
+        "aery-footer",
+        "marketplace",
+        "session-auto-name",
+        "upstream-notify",
+        "init-prompt"
       ],
       "source": "eminent337/aery-extensions/core"
     },

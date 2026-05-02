@@ -103,17 +103,4 @@ Use when facing similar tasks involving: ${taskPrompt.slice(0, 80)}
 			// Silent fail — don't interrupt user
 		}
 	});
-
-	aery.registerCommand("skills-auto", {
-		description: "List auto-generated skills",
-		handler: async (_args, ctx) => {
-			ensureDir();
-			const files = readdirSync(SKILLS_DIR).filter((f) => f.endsWith(".md"));
-			if (files.length === 0) {
-				ctx.ui.notify("No skills saved yet.", "info");
-				return;
-			}
-			aery.sendUserMessage(`Auto-saved skills (${files.length}):\n\n${files.join("\n")}`);
-		},
-	});
 }

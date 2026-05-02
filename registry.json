@@ -9,8 +9,7 @@
         "provider-profiles",
         "model-failover",
         "aery-header",
-        "aery-footer",
-        "help"
+        "aery-footer"
       ],
       "source": "eminent337/aery-extensions/core"
     },

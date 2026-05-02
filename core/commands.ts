@@ -80,24 +80,6 @@ export default function (aery: ExtensionAPI) {
 		},
 	});
 
-	// /copy — copy last assistant response to clipboard
-	aery.registerCommand("clip", {
-		description: "Copy last assistant response to clipboard (/clip)",
-		handler: async (_args, ctx) => {
-			const entries = ctx.sessionManager.getBranch().filter(e => e.type === "message");
-			const last = [...entries].reverse().find(e => (e as any).message?.role === "assistant");
-			if (!last) { ctx.ui.notify("No assistant response to copy", "warning"); return; }
-			const m = (last as any).message;
-			const text = Array.isArray(m.content)
-				? m.content.filter((c: any) => c.type === "text").map((c: any) => c.text).join("\n")
-				: m.content ?? "";
-			try {
-				await aery.exec("bash", ["-c", `echo ${JSON.stringify(text)} | xclip -selection clipboard 2>/dev/null || echo ${JSON.stringify(text)} | xsel --clipboard 2>/dev/null || echo ${JSON.stringify(text)} | pbcopy 2>/dev/null`]);
-				ctx.ui.notify("Copied to clipboard", "info");
-			} catch { ctx.ui.notify("Clipboard not available", "warning"); }
-		},
-	});
-
 	// /doctor — diagnose installation
 	aery.registerCommand("doctor", {
 		description: "Diagnose aery installation",

@@ -55,23 +55,4 @@ export default function (aery: ExtensionAPI) {
 			);
 		}
 	});
-
-	aery.registerCommand("skill-scores", {
-		description: "Show skill confidence scores",
-		handler: async (args, ctx) => {
-			const scores = loadScores();
-			if (Object.keys(scores).length === 0) {
-				ctx.ui.notify("No skill scores recorded yet", "info");
-				return;
-			}
-			const list = Object.entries(scores)
-				.map(([name, s]) => {
-					const total = s.success + s.fail;
-					const pct = Math.round((s.success / total) * 100);
-					return `${name}: ${pct}% (${s.success}✓ ${s.fail}✗)`;
-				})
-				.join("\n");
-			aery.sendUserMessage(`Skill confidence scores:\n\n${list}`);
-		},
-	});
 }

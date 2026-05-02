@@ -111,10 +111,17 @@ export function discoverAgents(cwd: string, scope: AgentScope): AgentDiscoveryRe
 	const userDir = path.join(getAgentDir(), "agents");
 	const projectAgentsDir = findNearestProjectAgentsDir(cwd);
 
+	// Also load bundled agents shipped with this extension
+	const bundledDir = path.join(path.dirname(new URL(import.meta.url).pathname), "agents");
+
+	const bundledAgents = loadAgentsFromDir(bundledDir, "user");
 	const userAgents = scope === "project" ? [] : loadAgentsFromDir(userDir, "user");
 	const projectAgents = scope === "user" || !projectAgentsDir ? [] : loadAgentsFromDir(projectAgentsDir, "project");
 
 	const agentMap = new Map<string, AgentConfig>();
+
+	// Bundled agents are lowest priority — user and project agents override them
+	for (const agent of bundledAgents) agentMap.set(agent.name, agent);
 
 	if (scope === "both") {
 		for (const agent of userAgents) agentMap.set(agent.name, agent);

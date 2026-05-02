@@ -120,6 +120,19 @@ export default function (aery: ExtensionAPI) {
 		if (!d.active) return;
 		const p = d.profiles.find(x => x.name === d.active);
 		if (!p) return;
+
+		// Don't override if the user passed an explicit --model or --provider flag.
+		// Detect this by checking if the current model differs from settings.defaultModel.
+		try {
+			const settingsPath = join(homedir(), ".aery", "agent", "settings.json");
+			const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
+			const defaultModelId = settings.defaultModel as string | undefined;
+			const currentModelId = ctx.model?.id;
+			// If current model is already set and differs from the global default,
+			// the user explicitly chose a model via CLI — respect that choice.
+			if (currentModelId && defaultModelId && currentModelId !== defaultModelId) return;
+		} catch { /* if we can't read settings, proceed with profile */ }
+
 		const model = ctx.modelRegistry.find(p.provider, p.modelId);
 		if (model) await aery.setModel(model);
 	});

@@ -17,3 +17,8 @@ Rules:
 - Never commit unless explicitly asked.
 - No emojis in commits, issues, or code.
 - Write issue/PR comments to a temp file, post with `gh --body-file`.
+
+## Persistent memory
+Your memory file lives at `~/.aery/agent/agent-memory/aery-core/MEMORY.md`.
+After completing a task, append any reusable learnings (patterns, gotchas, file locations) to that file.
+Keep entries concise — one line per learning. Do not repeat what is already there.

@@ -22,3 +22,8 @@ Key rules for this domain:
 - Run `npm run check` from repo root after changes.
 - No `any` types. No inline imports.
 - Never `git add -A`.
+
+## Persistent memory
+Your memory file lives at `~/.aery/agent/agent-memory/aery-tui/MEMORY.md`.
+After completing a task, append any reusable learnings (patterns, gotchas, file locations) to that file.
+Keep entries concise — one line per learning. Do not repeat what is already there.

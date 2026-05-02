@@ -94,6 +94,19 @@ function findNearestProjectAgentsDir(cwd: string): string | null {
 	}
 }
 
+/**
+ * Load persistent memory for an agent from ~/.aery/agent/agent-memory/<agentName>/MEMORY.md.
+ * Returns empty string if no memory file exists.
+ */
+export function loadAgentMemory(agentName: string): string {
+	const memoryPath = path.join(getAgentDir(), "agent-memory", agentName, "MEMORY.md");
+	try {
+		return fs.readFileSync(memoryPath, "utf-8").trim();
+	} catch {
+		return "";
+	}
+}
+
 export function discoverAgents(cwd: string, scope: AgentScope): AgentDiscoveryResult {
 	const userDir = path.join(getAgentDir(), "agents");
 	const projectAgentsDir = findNearestProjectAgentsDir(cwd);

@@ -22,7 +22,7 @@ import { StringEnum } from "@eminent337/aery-ai";
 import type { AgentToolResult } from "@eminent337/aery-core";
 import { Container, Markdown, Spacer, Text } from "@eminent337/aery-tui";
 import { Type } from "typebox";
-import { type AgentConfig, type AgentScope, discoverAgents } from "./agents.js";
+import { type AgentConfig, type AgentScope, discoverAgents, loadAgentMemory } from "./agents.js";
 
 const MAX_PARALLEL_TASKS = 8;
 const MAX_CONCURRENCY = 4;
@@ -292,7 +292,11 @@ async function runSingleAgent(
 
 	try {
 		if (agent.systemPrompt.trim()) {
-			const tmp = await writePromptToTempFile(agent.name, agent.systemPrompt);
+			const memory = loadAgentMemory(agent.name);
+			const fullPrompt = memory
+				? `<agent-memory>\n${memory}\n</agent-memory>\n\n${agent.systemPrompt}`
+				: agent.systemPrompt;
+			const tmp = await writePromptToTempFile(agent.name, fullPrompt);
 			tmpPromptDir = tmp.dir;
 			tmpPromptPath = tmp.filePath;
 			args.push("--append-system-prompt", tmpPromptPath);

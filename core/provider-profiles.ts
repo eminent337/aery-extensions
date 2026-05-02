@@ -113,21 +113,34 @@ function classify(p: string): "complex"|"simple"|"unknown" {
 
 export default function (aery: ExtensionAPI) {
 
-	aery.on("session_start", async (_event, _ctx) => {
+	let profileApplied = false;
+	aery.on("session_start", (_event, _ctx) => {
+		profileApplied = false;
 		const d = loadProfiles();
 		if (d.active === "auto") { autoEnabled = true; return; }
 		autoEnabled = false;
-		if (!d.active) return;
+	});
+
+	aery.on("before_agent_start", async (_event, ctx) => {
+		if (profileApplied) return;
+		profileApplied = true;
+
+		const d = loadProfiles();
+		if (!d.active || d.active === "auto") return;
 		const p = d.profiles.find(x => x.name === d.active);
 		if (!p) return;
 
-		// Don't override if the user passed an explicit --model or --provider flag.
+		// Don't override explicit --model or --provider flag
 		const argv = process.argv;
 		const hasExplicitModel = argv.includes("--model") || argv.includes("-m") ||
 			argv.includes("--provider") || argv.some(a => /^[\w-]+\/[\w.-]+$/.test(a) && argv.indexOf(a) > 0);
 		if (hasExplicitModel) return;
 
-		const model = _ctx.modelRegistry.find(p.provider, p.modelId);
+		// Skip if already on the right model — avoids triggering showStatus notification
+		const current = ctx.model;
+		if (current && current.provider === p.provider && current.id === p.modelId) return;
+
+		const model = ctx.modelRegistry.find(p.provider, p.modelId);
 		if (model) await aery.setModel(model);
 	});
 

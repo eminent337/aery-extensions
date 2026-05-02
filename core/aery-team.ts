@@ -37,9 +37,10 @@ When you finish your part, end with:
 `.trim();
 
 export default function (pi: ExtensionAPI) {
-	// Inject collaboration context into every session
-	pi.on("session_start", async (_event, ctx) => {
-		ctx.appendSystemPrompt(SPECIALIST_CONTEXT);
+	// Inject collaboration context into every agent start
+	pi.on("before_agent_start", (_event, _ctx) => {
+		const base = _event.systemPrompt;
+		return { systemPrompt: `${base}\n\n${SPECIALIST_CONTEXT}` };
 	});
 
 	// /aery-collab — shows who does what and how handoffs work

@@ -105,7 +105,7 @@ export default function (aery: ExtensionAPI) {
 		if (!config?.enabled || manualOverride) return;
 		if (!config.fast_model || !config.power_model) return;
 
-		const userMsg = [...event.messages].reverse().find((m) => m.role === "user");
+		const userMsg = [...(event.messages ?? [])].reverse().find((m) => m.role === "user");
 		if (!userMsg) return;
 
 		const text = userMsg.content

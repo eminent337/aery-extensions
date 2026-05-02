@@ -70,12 +70,7 @@ export default function (aery: ExtensionAPI) {
 		}
 		if (changed) save(model);
 
-		if (Object.keys(model.preferences).length > 0) {
-			const prefs = Object.entries(model.preferences)
-				.map(([k, v]) => `${k}: ${v}`)
-				.join(", ");
-			ctx.ui.notify(`User model: ${prefs}`, "info");
-		}
+
 	});
 
 	aery.registerCommand("pref", {

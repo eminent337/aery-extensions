@@ -22,7 +22,8 @@
         "agent-teams",
         "help",
         "default-agents",
-        "aery-doctor"
+        "aery-doctor",
+        "aery-team"
       ],
       "source": "eminent337/aery-extensions/core"
     },

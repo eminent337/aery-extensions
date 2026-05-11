@@ -47,6 +47,45 @@ export function stitchSetupMessage(status = getStitchAuthStatus()): string {
 	].join("\n");
 }
 
+function stitchApiKeyInstructions(): string {
+	return [
+		"Stitch API key setup:",
+		"1. Create or copy your Stitch API key.",
+		"2. Start Aery with STITCH_API_KEY set.",
+		"   Example: STITCH_API_KEY=... aery",
+		"3. Run /stitch doctor.",
+	].join("\n");
+}
+
+function stitchGcloudInstructions(): string {
+	return [
+		"Stitch gcloud setup:",
+		"1. Run: gcloud auth application-default login",
+		"2. Run: gcloud config set project <PROJECT_ID>",
+		"3. Enable the Stitch API for the project if required.",
+		"4. Start Aery with STITCH_USE_SYSTEM_GCLOUD=1.",
+		"5. Run /stitch doctor.",
+	].join("\n");
+}
+
+function stitchHelpMessage(): string {
+	return [
+		"Google Stitch for Aery",
+		"",
+		"Authenticate:",
+		"  /stitch auth              choose guided/API-key/gcloud setup",
+		"  /stitch auth guided       run Stitch MCP guided setup",
+		"  /stitch auth api-key      show API-key setup",
+		"  /stitch auth gcloud       show gcloud setup",
+		"",
+		"Use:",
+		"  /stitch status",
+		"  /stitch doctor",
+		"  /stitch projects",
+		"  /stitch screens projects/<PROJECT_ID>",
+	].join("\n");
+}
+
 export function buildStitchToolArgs(toolName: string, data: unknown): string[] {
 	return ["-y", STITCH_MCP_PACKAGE, "tool", toolName, "-d", JSON.stringify(data ?? {})];
 }
@@ -266,12 +305,41 @@ export default function stitchExtension(aery: ExtensionAPI) {
 		handler: async (args, ctx) => {
 			const command = parseStitchCommand(args);
 
+			if (command.name === "help") {
+				ctx.ui.notify(stitchHelpMessage(), "info");
+				return;
+			}
+
 			if (command.name === "status") {
 				ctx.ui.notify(stitchSetupMessage(), "info");
 				return;
 			}
 
 			if (command.name === "auth" || command.name === "login" || command.name === "setup") {
+				const authMode = command.rest.toLowerCase();
+				if (authMode === "api-key" || authMode === "apikey" || authMode === "key") {
+					ctx.ui.notify(stitchApiKeyInstructions(), "info");
+					return;
+				}
+				if (authMode === "gcloud" || authMode === "google" || authMode === "adc") {
+					ctx.ui.notify(stitchGcloudInstructions(), "info");
+					return;
+				}
+				if (authMode === "guided" || authMode === "mcp" || authMode === "init") {
+					ctx.ui.notify("Starting Stitch MCP setup. Follow the terminal prompts.", "info");
+					try {
+						await execFileAsync("npx", ["-y", STITCH_MCP_PACKAGE, "init"], {
+							env: buildCommonEnv(),
+							timeout: 10 * 60_000,
+							stdio: "inherit",
+						} as Parameters<typeof execFileAsync>[2]);
+						ctx.ui.notify("Stitch setup finished. Restart Aery if new environment variables were created.", "info");
+					} catch (error) {
+						ctx.ui.notify(`Stitch setup failed: ${error instanceof Error ? error.message : String(error)}`, "error");
+					}
+					return;
+				}
+
 				const choice = await ctx.ui.select("Set up Google Stitch", [
 					"Guided setup with Stitch MCP",
 					"API key instructions",
@@ -294,22 +362,10 @@ export default function stitchExtension(aery: ExtensionAPI) {
 					return;
 				}
 				if (choice.startsWith("API")) {
-					ctx.ui.notify(
-						"Create a Stitch API key, then start Aery with STITCH_API_KEY set.\nExample: STITCH_API_KEY=... aery\nRun /stitch doctor after setup.",
-						"info",
-					);
+					ctx.ui.notify(stitchApiKeyInstructions(), "info");
 					return;
 				}
-				ctx.ui.notify(
-					[
-						"Configure system gcloud for Stitch:",
-						"gcloud auth application-default login",
-						"gcloud config set project <PROJECT_ID>",
-						"gcloud beta services mcp enable stitch.googleapis.com --project=<PROJECT_ID>",
-						"Then start Aery with STITCH_USE_SYSTEM_GCLOUD=1.",
-					].join("\n"),
-					"info",
-				);
+				ctx.ui.notify(stitchGcloudInstructions(), "info");
 				return;
 			}
 
@@ -345,17 +401,7 @@ export default function stitchExtension(aery: ExtensionAPI) {
 				return;
 			}
 
-			ctx.ui.notify(
-				[
-					"Usage:",
-					"  /stitch status",
-					"  /stitch auth",
-					"  /stitch doctor",
-					"  /stitch projects",
-					"  /stitch screens projects/<PROJECT_ID>",
-				].join("\n"),
-				"info",
-			);
+			ctx.ui.notify(stitchHelpMessage(), "info");
 		},
 	});
 }

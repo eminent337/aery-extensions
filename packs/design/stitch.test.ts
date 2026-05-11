@@ -46,5 +46,9 @@ test("parses stitch slash commands", () => {
 		name: "screens",
 		rest: "projects/123",
 	});
+	assert.deepEqual(parseStitchCommand("auth gcloud"), {
+		name: "auth",
+		rest: "gcloud",
+	});
 	assert.deepEqual(parseStitchCommand(""), { name: "help", rest: "" });
 });

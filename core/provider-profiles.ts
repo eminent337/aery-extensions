@@ -14,6 +14,19 @@ const MODELS_PATH = join(homedir(), ".aery", "agent", "models.json");
 
 interface Profile { name: string; provider: string; modelId: string }
 interface ProfilesFile { active?: string; profiles: Profile[] }
+type ModelSelectSource = "set" | "cycle" | "restore";
+
+export function shouldDisableProviderProfileOnModelSelect(options: {
+	activeProfile?: string;
+	autoEnabled: boolean;
+	autoRouterSwitching: boolean;
+	providerProfileSwitching: boolean;
+	source: ModelSelectSource;
+}): boolean {
+	if (options.providerProfileSwitching || options.autoRouterSwitching) return false;
+	if (options.source === "restore") return false;
+	return options.autoEnabled || !!options.activeProfile;
+}
 
 function loadProfiles(): ProfilesFile {
 	if (!existsSync(PROFILES_PATH)) return { profiles: [] };
@@ -101,6 +114,7 @@ let failedModels = new Set<string>();
 let workingModels = new Set<string>();
 let justFailedOver = false;
 let autoRouterSwitching = false;
+let providerProfileSwitching = false;
 let lastPrompt = ""; // track last prompt for retry after failover
 const COMPLEX = ["implement","build","create","refactor","debug","architect","design","fix","write","migrate","optimize"];
 const SIMPLE  = ["explain","summarize","translate","what is","describe","list","show me","tell me","how does"];
@@ -141,7 +155,14 @@ export default function (aery: ExtensionAPI) {
 		if (current && current.provider === p.provider && current.id === p.modelId) return;
 
 		const model = ctx.modelRegistry.find(p.provider, p.modelId);
-		if (model) await aery.setModel(model);
+		if (model) {
+			providerProfileSwitching = true;
+			try {
+				await aery.setModel(model);
+			} finally {
+				providerProfileSwitching = false;
+			}
+		}
 	});
 
 	// Always capture last prompt for retry after failover
@@ -191,14 +212,25 @@ export default function (aery: ExtensionAPI) {
 	});
 
 	aery.on("model_select", async (event, ctx) => {
-		if (!autoEnabled) return;
-		if (autoRouterSwitching) return; // auto-router triggered this, don't disable
-		if ((event as any).source === "restore") return;
-		autoEnabled = false;
 		const d = loadProfiles();
+		if (!shouldDisableProviderProfileOnModelSelect({
+			activeProfile: d.active,
+			autoEnabled,
+			autoRouterSwitching,
+			providerProfileSwitching,
+			source: (event as any).source,
+		})) return;
+
+		const disabledAuto = autoEnabled || d.active === "auto";
+		autoEnabled = false;
 		d.active = undefined;
 		saveProfiles(d);
-		ctx.ui.notify(`Auto-router disabled. Using: ${event.model?.id}`, "info");
+		ctx.ui.notify(
+			disabledAuto
+				? `Auto-router disabled. Using: ${event.model?.id}`
+				: `Provider profile disabled. Using: ${event.model?.id}`,
+			"info"
+		);
 	});
 
 	aery.on("after_provider_response", async (event, ctx) => {
@@ -338,9 +370,12 @@ export default function (aery: ExtensionAPI) {
 				saveProfile(name, name, modelId);
 				const newModel = ctx.modelRegistry.find(name, modelId);
 				if (newModel) {
-					autoRouterSwitching = true;
-					await aery.setModel(newModel);
-					autoRouterSwitching = false;
+					providerProfileSwitching = true;
+					try {
+						await aery.setModel(newModel);
+					} finally {
+						providerProfileSwitching = false;
+					}
 					ctx.ui.notify(`Switched to ${name}/${modelId}`, "info");
 				} else {
 					ctx.ui.notify(`Saved ${name} profile: ${modelId}. Restart aery to use.`, "info");
@@ -422,7 +457,13 @@ export default function (aery: ExtensionAPI) {
 				if (!profile) return;
 				const model = ctx.modelRegistry.find(profile.provider, profile.modelId);
 				if (!model) { ctx.ui.notify(`Model not found. Restart aery after adding new providers.`, "warning"); return; }
-				const ok = await aery.setModel(model);
+				providerProfileSwitching = true;
+				let ok = false;
+				try {
+					ok = await aery.setModel(model);
+				} finally {
+					providerProfileSwitching = false;
+				}
 				if (ok) {
 					autoEnabled = false;
 					d.active = profileName;

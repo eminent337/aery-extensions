@@ -100,6 +100,12 @@
       "install": "https://github.com/eminent337/aery-superpowers",
       "type": "skills"
     },
+    "stitch": {
+      "description": "Google Stitch design integration \u2014 list projects/screens, fetch screen code/images, extract design context, generate new screens, and map Stitch screens to site routes. Requires @_davideast/stitch-mcp authentication.",
+      "source": "eminent337/aery-extensions",
+      "file": "packs/design/stitch.ts",
+      "type": "extension"
+    },
     "geospatial": {
       "description": "Geospatial tools \u2014 GDAL, coordinate systems, GIS workflows",
       "extensions": [],

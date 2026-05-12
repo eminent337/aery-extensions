@@ -354,6 +354,20 @@ function compactScreen(screen: Record<string, unknown>): Record<string, unknown>
 	};
 }
 
+function generatedScreensFromResult(parsed: Record<string, unknown>): Record<string, unknown>[] {
+	const outputComponents = Array.isArray(parsed.outputComponents) ? parsed.outputComponents : [];
+	return outputComponents.flatMap((component) => {
+		if (!component || typeof component !== "object") return [];
+		const design = (component as Record<string, unknown>).design;
+		if (!design || typeof design !== "object") return [];
+		const screens = (design as Record<string, unknown>).screens;
+		if (!Array.isArray(screens)) return [];
+		return screens
+			.filter((screen): screen is Record<string, unknown> => !!screen && typeof screen === "object")
+			.map(compactScreen);
+	});
+}
+
 export function formatStitchToolResult(toolName: string, result: string, raw = false): string {
 	if (raw) return result;
 	const parsed = parseStitchResultObject(result);
@@ -375,6 +389,45 @@ export function formatStitchToolResult(toolName: string, result: string, raw = f
 			.filter((screen): screen is Record<string, unknown> => !!screen && typeof screen === "object")
 			.map(compactScreen);
 		return JSON.stringify({ screens, count: screens.length }, null, 2);
+	}
+
+	if (toolName === "generate_screen_from_text") {
+		const screens = generatedScreensFromResult(parsed);
+		return JSON.stringify(
+			{
+				projectId: parsed.projectId,
+				sessionId: parsed.sessionId,
+				screens,
+				screenCount: screens.length,
+			},
+			null,
+			2,
+		);
+	}
+
+	if (toolName === "extract_design_context") {
+		const context = typeof parsed.context === "string" ? parsed.context : undefined;
+		return JSON.stringify(
+			{
+				projectId: parsed.projectId,
+				screenId: parsed.screenId ?? shortId(parsed.name),
+				contextPreview: context ? context.slice(0, 400) : undefined,
+				hasContext: Boolean(context),
+			},
+			null,
+			2,
+		);
+	}
+
+	if (toolName === "build_site" && Array.isArray(parsed.pages)) {
+		const pages = parsed.pages
+			.filter((page): page is Record<string, unknown> => !!page && typeof page === "object")
+			.map((page) => ({
+				route: page.route,
+				screenId: page.screenId,
+				htmlLength: typeof page.html === "string" ? page.html.length : undefined,
+			}));
+		return JSON.stringify({ projectId: parsed.projectId, pages, pageCount: pages.length }, null, 2);
 	}
 
 	return result;
@@ -495,10 +548,12 @@ export default function stitchExtension(aery: ExtensionAPI) {
 		parameters: Type.Object({
 			projectId: Type.String({ description: "Numeric Stitch project ID." }),
 			screenId: Type.String({ description: "Stitch screen ID." }),
+			raw: Type.Optional(Type.Boolean({ description: "Return the full uncompressed Stitch response." })),
 		}),
 		async execute(_id, params) {
-			const result = await callStitchTool("extract_design_context", params);
-			return textResult(result, { tool: "extract_design_context" });
+			const { raw, payload } = splitRawParams(params);
+			const result = await callStitchTool("extract_design_context", payload);
+			return textResult(formatStitchToolResult("extract_design_context", result, raw), { tool: "extract_design_context", raw });
 		},
 	});
 
@@ -511,10 +566,12 @@ export default function stitchExtension(aery: ExtensionAPI) {
 			prompt: Type.String({ description: "Natural-language design prompt for Stitch." }),
 			projectId: Type.Optional(Type.String({ description: "Optional numeric Stitch project ID." })),
 			context: Type.Optional(Type.String({ description: "Optional design context extracted from another screen." })),
+			raw: Type.Optional(Type.Boolean({ description: "Return the full uncompressed Stitch response." })),
 		}),
 		async execute(_id, params) {
-			const result = await callStitchTool("generate_screen_from_text", params);
-			return textResult(result, { tool: "generate_screen_from_text" });
+			const { raw, payload } = splitRawParams(params);
+			const result = await callStitchTool("generate_screen_from_text", payload);
+			return textResult(formatStitchToolResult("generate_screen_from_text", result, raw), { tool: "generate_screen_from_text", raw });
 		},
 	});
 
@@ -532,10 +589,12 @@ export default function stitchExtension(aery: ExtensionAPI) {
 				}),
 				{ description: "Screen-to-route mapping." },
 			),
+			raw: Type.Optional(Type.Boolean({ description: "Return the full uncompressed Stitch response." })),
 		}),
 		async execute(_id, params) {
-			const result = await callStitchTool("build_site", params);
-			return textResult(result, { tool: "build_site" });
+			const { raw, payload } = splitRawParams(params);
+			const result = await callStitchTool("build_site", payload);
+			return textResult(formatStitchToolResult("build_site", result, raw), { tool: "build_site", raw });
 		},
 	});
 

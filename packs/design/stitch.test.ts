@@ -157,3 +157,45 @@ test("keeps raw Stitch project output when requested", () => {
 
 	assert.equal(formatStitchToolResult("list_projects", raw, true), raw);
 });
+
+test("formats generated screens without dumping output components", () => {
+	const result = formatStitchToolResult(
+		"generate_screen_from_text",
+		JSON.stringify({
+			projectId: "2763830009615060503",
+			sessionId: "296031180902487325",
+			outputComponents: [
+				{
+					design: {
+						screens: [
+							{
+								name: "projects/2763830009615060503/screens/screen-1",
+								id: "screen-1",
+								title: "Ground Intelligence",
+								deviceType: "DESKTOP",
+							},
+						],
+					},
+				},
+			],
+			designSystem: {
+				styleGuidelines: "very large document",
+			},
+		}),
+	);
+
+	assert.deepEqual(JSON.parse(result), {
+		projectId: "2763830009615060503",
+		sessionId: "296031180902487325",
+		screens: [
+			{
+				screenId: "screen-1",
+				name: "projects/2763830009615060503/screens/screen-1",
+				title: "Ground Intelligence",
+				deviceType: "DESKTOP",
+			},
+		],
+		screenCount: 1,
+	});
+	assert.doesNotMatch(result, /outputComponents|styleGuidelines/);
+});

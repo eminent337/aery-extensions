@@ -119,41 +119,28 @@ export function stitchSetupMessage(status = getStitchAuthStatus()): string {
 	].join("\n");
 }
 
-function stitchApiKeyInstructions(): string {
-	return [
-		"Stitch API key setup:",
-		"Run /stitch auth api-key to save a Stitch API key for Aery.",
-		"You can also start Aery with STITCH_API_KEY set.",
-		"After setup, run /stitch doctor.",
-	].join("\n");
-}
+const STITCH_MENU = {
+	apiKey: "Configure with API key",
+	gcloud: "Configure with gcloud",
+	guided: "Guided Stitch MCP setup",
+	status: "Status",
+	doctor: "Doctor",
+	projects: "Projects",
+	screens: "Screens in a project",
+	cancel: "Cancel",
+} as const;
 
-function stitchGcloudInstructions(): string {
+export function stitchMainMenuOptions(): string[] {
 	return [
-		"Stitch gcloud setup:",
-		"1. Run: gcloud auth application-default login",
-		"2. Run /stitch auth gcloud and enter your project ID.",
-		"3. Enable the Stitch API for the project if required.",
-		"4. Run /stitch doctor.",
-	].join("\n");
-}
-
-function stitchHelpMessage(): string {
-	return [
-		"Google Stitch for Aery",
-		"",
-		"Authenticate:",
-		"  /stitch auth              choose guided/API-key/gcloud setup",
-		"  /stitch auth guided       run Stitch MCP guided setup",
-		"  /stitch auth api-key      show API-key setup",
-		"  /stitch auth gcloud       show gcloud setup",
-		"",
-		"Use:",
-		"  /stitch status",
-		"  /stitch doctor",
-		"  /stitch projects",
-		"  /stitch screens projects/<PROJECT_ID>",
-	].join("\n");
+		STITCH_MENU.apiKey,
+		STITCH_MENU.gcloud,
+		STITCH_MENU.guided,
+		STITCH_MENU.status,
+		STITCH_MENU.doctor,
+		STITCH_MENU.projects,
+		STITCH_MENU.screens,
+		STITCH_MENU.cancel,
+	];
 }
 
 export function buildStitchToolArgs(toolName: string, data: unknown): string[] {
@@ -194,11 +181,8 @@ export function formatStitchError(error: unknown): string {
 	return message;
 }
 
-export function parseStitchCommand(input: string): { name: string; rest: string } {
-	const trimmed = input.trim();
-	if (!trimmed) return { name: "help", rest: "" };
-	const [name = "help", ...parts] = trimmed.split(/\s+/);
-	return { name: name.toLowerCase(), rest: parts.join(" ") };
+export function parseStitchCommand(_input: string): { name: string; rest: string } {
+	return { name: "menu", rest: "" };
 }
 
 function buildCommonEnv(): NodeJS.ProcessEnv {
@@ -497,110 +481,36 @@ export default function stitchExtension(aery: ExtensionAPI) {
 	});
 
 	aery.registerCommand("stitch", {
-		description: "Google Stitch integration. Usage: /stitch status | auth | doctor | projects | screens <project>",
+		description: "Open the Google Stitch integration menu.",
 		handler: async (args, ctx) => {
-			const command = parseStitchCommand(args);
+			parseStitchCommand(args);
+			const choice = await ctx.ui.select("Google Stitch", stitchMainMenuOptions());
+			if (!choice || choice === STITCH_MENU.cancel) return;
 
-			if (command.name === "help") {
-				ctx.ui.notify(stitchHelpMessage(), "info");
-				return;
-			}
-
-			if (command.name === "status") {
+			if (choice === STITCH_MENU.status) {
 				ctx.ui.notify(stitchSetupMessage(), "info");
 				return;
 			}
 
-			if (command.name === "auth" || command.name === "login" || command.name === "setup") {
-				const authMode = command.rest.toLowerCase();
-				if (authMode === "api-key" || authMode === "apikey" || authMode === "key") {
-					const apiKey = await ctx.ui.input("Enter Google Stitch API key:");
-					if (apiKey === undefined) return;
-					if (!apiKey.trim()) {
-						ctx.ui.notify("Stitch API key is required.", "warning");
-						return;
-					}
-					const projectId = await ctx.ui.input("Optional Google Cloud project ID:", process.env.GOOGLE_CLOUD_PROJECT ?? "");
-					saveStitchConfig({
-						...loadStitchConfig(),
-						authMode: "api-key",
-						apiKey: apiKey.trim(),
-						projectId: projectId?.trim() || undefined,
-					});
-					ctx.ui.notify(`Saved Stitch API-key configuration to ${STITCH_CONFIG_PATH}.\nRun /stitch doctor next.`, "info");
+			if (choice === STITCH_MENU.apiKey) {
+				const apiKey = await ctx.ui.input("Enter Google Stitch API key:");
+				if (apiKey === undefined) return;
+				if (!apiKey.trim()) {
+					ctx.ui.notify("Stitch API key is required.", "warning");
 					return;
 				}
-				if (authMode === "gcloud" || authMode === "google" || authMode === "adc") {
-					const projectId = await ctx.ui.input("Google Cloud project ID for Stitch:", process.env.GOOGLE_CLOUD_PROJECT ?? "");
-					if (projectId === undefined) return;
-					if (!projectId.trim()) {
-						ctx.ui.notify("Google Cloud project ID is required for gcloud setup.", "warning");
-						return;
-					}
-					saveStitchConfig({
-						...loadStitchConfig(),
-						authMode: "gcloud",
-						projectId: projectId.trim(),
-					});
-					ctx.ui.notify(
-						`Saved Stitch gcloud configuration to ${STITCH_CONFIG_PATH}.\nMake sure you have run: gcloud auth application-default login\nThen run /stitch doctor.`,
-						"info",
-					);
-					return;
-				}
-				if (authMode === "guided" || authMode === "mcp" || authMode === "init") {
-					ctx.ui.notify("Starting Stitch MCP setup. Follow the terminal prompts.", "info");
-					try {
-						await execFileAsync("npx", ["-y", STITCH_MCP_PACKAGE, "init"], {
-							env: buildCommonEnv(),
-							timeout: 10 * 60_000,
-							stdio: "inherit",
-						} as Parameters<typeof execFileAsync>[2]);
-						ctx.ui.notify("Stitch setup finished. Restart Aery if new environment variables were created.", "info");
-					} catch (error) {
-						ctx.ui.notify(`Stitch setup failed: ${error instanceof Error ? error.message : String(error)}`, "error");
-					}
-					return;
-				}
+				const projectId = await ctx.ui.input("Optional Google Cloud project ID:", process.env.GOOGLE_CLOUD_PROJECT ?? "");
+				saveStitchConfig({
+					...loadStitchConfig(),
+					authMode: "api-key",
+					apiKey: apiKey.trim(),
+					projectId: projectId?.trim() || undefined,
+				});
+				ctx.ui.notify(`Saved Stitch API-key configuration to ${STITCH_CONFIG_PATH}.\nOpen /stitch and choose Doctor next.`, "info");
+				return;
+			}
 
-				const choice = await ctx.ui.select("Set up Google Stitch", [
-					"Guided setup with Stitch MCP",
-					"API key instructions",
-					"System gcloud instructions",
-					"Cancel",
-				]);
-				if (!choice || choice === "Cancel") return;
-				if (choice.startsWith("Guided")) {
-					ctx.ui.notify("Starting Stitch MCP setup. Follow the terminal prompts.", "info");
-					try {
-						await execFileAsync("npx", ["-y", STITCH_MCP_PACKAGE, "init"], {
-							env: buildCommonEnv(),
-							timeout: 10 * 60_000,
-							stdio: "inherit",
-						} as Parameters<typeof execFileAsync>[2]);
-						ctx.ui.notify("Stitch setup finished. Restart Aery if new environment variables were created.", "info");
-					} catch (error) {
-						ctx.ui.notify(`Stitch setup failed: ${error instanceof Error ? error.message : String(error)}`, "error");
-					}
-					return;
-				}
-				if (choice.startsWith("API")) {
-					const apiKey = await ctx.ui.input("Enter Google Stitch API key:");
-					if (apiKey === undefined) return;
-					if (!apiKey.trim()) {
-						ctx.ui.notify("Stitch API key is required.", "warning");
-						return;
-					}
-					const projectId = await ctx.ui.input("Optional Google Cloud project ID:", process.env.GOOGLE_CLOUD_PROJECT ?? "");
-					saveStitchConfig({
-						...loadStitchConfig(),
-						authMode: "api-key",
-						apiKey: apiKey.trim(),
-						projectId: projectId?.trim() || undefined,
-					});
-					ctx.ui.notify(`Saved Stitch API-key configuration to ${STITCH_CONFIG_PATH}.\nRun /stitch doctor next.`, "info");
-					return;
-				}
+			if (choice === STITCH_MENU.gcloud) {
 				const projectId = await ctx.ui.input("Google Cloud project ID for Stitch:", process.env.GOOGLE_CLOUD_PROJECT ?? "");
 				if (projectId === undefined) return;
 				if (!projectId.trim()) {
@@ -613,13 +523,28 @@ export default function stitchExtension(aery: ExtensionAPI) {
 					projectId: projectId.trim(),
 				});
 				ctx.ui.notify(
-					`Saved Stitch gcloud configuration to ${STITCH_CONFIG_PATH}.\nMake sure you have run: gcloud auth application-default login\nThen run /stitch doctor.`,
+					`Saved Stitch gcloud configuration to ${STITCH_CONFIG_PATH}.\nMake sure you have run: gcloud auth application-default login\nThen open /stitch and choose Doctor.`,
 					"info",
 				);
 				return;
 			}
 
-			if (command.name === "doctor") {
+			if (choice === STITCH_MENU.guided) {
+				ctx.ui.notify("Starting Stitch MCP setup. Follow the terminal prompts.", "info");
+				try {
+					await execFileAsync("npx", ["-y", STITCH_MCP_PACKAGE, "init"], {
+						env: buildCommonEnv(),
+						timeout: 10 * 60_000,
+						stdio: "inherit",
+					} as Parameters<typeof execFileAsync>[2]);
+					ctx.ui.notify("Stitch setup finished. Restart Aery if new environment variables were created.", "info");
+				} catch (error) {
+					ctx.ui.notify(`Stitch setup failed: ${error instanceof Error ? error.message : String(error)}`, "error");
+				}
+				return;
+			}
+
+			if (choice === STITCH_MENU.doctor) {
 				ctx.ui.notify("Running Stitch doctor...", "info");
 				try {
 					ctx.ui.notify(await runStitchCli(["-y", STITCH_MCP_PACKAGE, "doctor"]), "info");
@@ -629,7 +554,7 @@ export default function stitchExtension(aery: ExtensionAPI) {
 				return;
 			}
 
-			if (command.name === "projects") {
+			if (choice === STITCH_MENU.projects) {
 				try {
 					ctx.ui.notify(await callStitchTool("list_projects", {}), "info");
 				} catch (error) {
@@ -638,20 +563,20 @@ export default function stitchExtension(aery: ExtensionAPI) {
 				return;
 			}
 
-			if (command.name === "screens") {
-				if (!command.rest) {
-					ctx.ui.notify('Usage: /stitch screens projects/<PROJECT_ID>', "warning");
+			if (choice === STITCH_MENU.screens) {
+				const projectName = await ctx.ui.input("Project ID or projects/<PROJECT_ID>:");
+				if (projectName === undefined) return;
+				if (!projectName.trim()) {
+					ctx.ui.notify("Project ID is required.", "warning");
 					return;
 				}
 				try {
-					ctx.ui.notify(await callStitchTool("list_screens", { projectName: command.rest }), "info");
+					ctx.ui.notify(await callStitchTool("list_screens", { projectName: projectName.trim() }), "info");
 				} catch (error) {
 					ctx.ui.notify(error instanceof Error ? error.message : String(error), "error");
 				}
 				return;
 			}
-
-			ctx.ui.notify(stitchHelpMessage(), "info");
 		},
 	});
 }

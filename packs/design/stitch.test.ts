@@ -8,6 +8,7 @@ import {
 	getStitchDirectAuth,
 	normalizeStitchToolPayload,
 	parseStitchCommand,
+	stitchMainMenuOptions,
 	stitchSetupMessage,
 } from "./stitch.ts";
 
@@ -99,13 +100,15 @@ test("formats stitch-mcp schema reference errors with a direct API hint", () => 
 });
 
 test("parses stitch slash commands", () => {
-	assert.deepEqual(parseStitchCommand("screens projects/123"), {
-		name: "screens",
-		rest: "projects/123",
-	});
-	assert.deepEqual(parseStitchCommand("auth gcloud"), {
-		name: "auth",
-		rest: "gcloud",
-	});
-	assert.deepEqual(parseStitchCommand(""), { name: "help", rest: "" });
+	assert.deepEqual(parseStitchCommand("screens projects/123"), { name: "menu", rest: "" });
+	assert.deepEqual(parseStitchCommand("auth gcloud"), { name: "menu", rest: "" });
+	assert.deepEqual(parseStitchCommand(""), { name: "menu", rest: "" });
+});
+
+test("stitch main menu prioritizes interactive configuration", () => {
+	assert.deepEqual(stitchMainMenuOptions().slice(0, 3), [
+		"Configure with API key",
+		"Configure with gcloud",
+		"Guided Stitch MCP setup",
+	]);
 });

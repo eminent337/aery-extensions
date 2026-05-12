@@ -15,6 +15,7 @@ import { Type } from "typebox";
 
 const execFileAsync = promisify(execFile);
 const STITCH_MCP_PACKAGE = "@_davideast/stitch-mcp";
+const STITCH_MCP_HOST = "https://stitch.googleapis.com/mcp";
 const STITCH_TIMEOUT_MS = 120_000;
 const STITCH_CONFIG_PATH = join(homedir(), ".aery", "agent", "stitch.json");
 
@@ -32,6 +33,10 @@ export interface StitchAuthStatus {
 	mode: StitchAuthMode;
 	projectId?: string;
 }
+
+export type StitchDirectAuth =
+	| { kind: "api-key"; apiKey: string }
+	| { kind: "access-token"; accessToken: string; projectId: string };
 
 function loadStitchConfig(): StitchConfig {
 	if (!existsSync(STITCH_CONFIG_PATH)) return {};
@@ -89,6 +94,19 @@ export function buildStitchEnv(
 	return next;
 }
 
+export function getStitchDirectAuth(
+	env: NodeJS.ProcessEnv = process.env,
+	config: StitchConfig = loadStitchConfig(),
+): StitchDirectAuth | undefined {
+	const apiKey = env.STITCH_API_KEY?.trim() || config.apiKey?.trim();
+	if (apiKey) return { kind: "api-key", apiKey };
+
+	const accessToken = env.STITCH_ACCESS_TOKEN?.trim() || config.accessToken?.trim();
+	const projectId = env.STITCH_PROJECT_ID?.trim() || env.GOOGLE_CLOUD_PROJECT?.trim() || config.projectId?.trim();
+	if (accessToken && projectId) return { kind: "access-token", accessToken, projectId };
+	return undefined;
+}
+
 export function stitchSetupMessage(status = getStitchAuthStatus()): string {
 	if (status.configured) {
 		const project = status.projectId ? `, project ${status.projectId}` : "";
@@ -142,6 +160,40 @@ export function buildStitchToolArgs(toolName: string, data: unknown): string[] {
 	return ["-y", STITCH_MCP_PACKAGE, "tool", toolName, "-d", JSON.stringify(data ?? {})];
 }
 
+function projectIdFromValue(value: unknown): string | undefined {
+	if (typeof value !== "string") return undefined;
+	const trimmed = value.trim();
+	if (!trimmed) return undefined;
+	const match = trimmed.match(/^projects\/([^/]+)(?:\/.*)?$/);
+	return match ? match[1] : trimmed;
+}
+
+export function normalizeStitchToolPayload(toolName: string, data: unknown): Record<string, unknown> {
+	const payload = data && typeof data === "object" && !Array.isArray(data) ? { ...(data as Record<string, unknown>) } : {};
+	const projectId = projectIdFromValue(payload.projectId ?? payload.projectName ?? payload.project ?? payload.name);
+	if (projectId && ["list_screens", "get_screen", "generate_screen_from_text", "build_site"].includes(toolName)) {
+		payload.projectId = projectId;
+		delete payload.projectName;
+		delete payload.project;
+	}
+	if (toolName === "get_screen" && typeof payload.screenId === "string" && !payload.name) {
+		payload.name = `projects/${payload.projectId}/screens/${payload.screenId}`;
+	}
+	return payload;
+}
+
+export function formatStitchError(error: unknown): string {
+	const message = error instanceof Error ? error.message : String(error);
+	if (message.includes("#/$defs/ScreenInstance") || message.includes("can't resolve reference")) {
+		return [
+			"Stitch MCP CLI failed while resolving its tool schema.",
+			"The saved Aery Stitch auth can still be valid; Aery will use the direct Stitch API when an API key or access token is configured.",
+			"Run /stitch doctor to verify auth, then retry the Stitch command.",
+		].join("\n");
+	}
+	return message;
+}
+
 export function parseStitchCommand(input: string): { name: string; rest: string } {
 	const trimmed = input.trim();
 	if (!trimmed) return { name: "help", rest: "" };
@@ -163,10 +215,102 @@ async function runStitchCli(args: string[], timeout = STITCH_TIMEOUT_MS): Promis
 	return stdout.trim();
 }
 
+function parseMcpTextContent(value: unknown): string {
+	if (value && typeof value === "object" && "content" in value && Array.isArray((value as { content: unknown }).content)) {
+		const content = (value as { content: Array<Record<string, unknown>> }).content;
+		if (content.length === 1 && typeof content[0]?.text === "string") return content[0].text;
+		return JSON.stringify(value, null, 2);
+	}
+	return JSON.stringify(value, null, 2);
+}
+
+function tryParseJsonObject(value: string): Record<string, unknown> | undefined {
+	try {
+		const parsed = JSON.parse(value) as unknown;
+		if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed as Record<string, unknown>;
+	} catch {}
+	return undefined;
+}
+
+async function callStitchApiTool(toolName: string, data: unknown): Promise<string> {
+	const auth = getStitchDirectAuth();
+	if (!auth) throw new Error("Direct Stitch API auth is not configured.");
+
+	const headers: Record<string, string> = {
+		"Content-Type": "application/json",
+		Accept: "application/json, text/event-stream",
+	};
+	if (auth.kind === "api-key") {
+		headers["X-Goog-Api-Key"] = auth.apiKey;
+	} else {
+		headers.Authorization = `Bearer ${auth.accessToken}`;
+		headers["X-Goog-User-Project"] = auth.projectId;
+	}
+
+	const response = await fetch(process.env.STITCH_HOST || STITCH_MCP_HOST, {
+		method: "POST",
+		headers,
+		body: JSON.stringify({
+			jsonrpc: "2.0",
+			id: 1,
+			method: "tools/call",
+			params: { name: toolName, arguments: normalizeStitchToolPayload(toolName, data) },
+		}),
+	});
+	const text = await response.text();
+	if (!response.ok) throw new Error(`Stitch API request failed (${response.status}): ${text}`);
+	const parsed = JSON.parse(text) as { error?: { message?: string }; result?: unknown };
+	if (parsed.error) throw new Error(parsed.error.message || JSON.stringify(parsed.error));
+	return parseMcpTextContent(parsed.result);
+}
+
+async function fetchDownloadUrl(url: string, asBase64 = false): Promise<string> {
+	const response = await fetch(url);
+	if (!response.ok) throw new Error(`Stitch download failed (${response.status}): ${await response.text()}`);
+	if (asBase64) {
+		const mimeType = response.headers.get("content-type")?.split(";")[0] || "image/png";
+		const data = Buffer.from(await response.arrayBuffer()).toString("base64");
+		return `data:${mimeType};base64,${data}`;
+	}
+	return response.text();
+}
+
+async function callDirectStitchHelper(toolName: string, data: unknown): Promise<string> {
+	if (toolName === "get_screen_code" || toolName === "get_screen_image") {
+		const screenText = await callStitchApiTool("get_screen", normalizeStitchToolPayload("get_screen", data));
+		const screen = tryParseJsonObject(screenText);
+		const key = toolName === "get_screen_code" ? "htmlCode" : "screenshot";
+		const file = screen?.[key] as { downloadUrl?: unknown } | undefined;
+		if (typeof file?.downloadUrl !== "string") throw new Error(`Stitch screen response did not include ${key}.downloadUrl.`);
+		return fetchDownloadUrl(file.downloadUrl, toolName === "get_screen_image");
+	}
+	if (toolName === "build_site") {
+		const payload = normalizeStitchToolPayload("build_site", data);
+		const projectId = typeof payload.projectId === "string" ? payload.projectId : undefined;
+		const routes = Array.isArray(payload.routes) ? payload.routes : [];
+		if (!projectId) throw new Error("build_site requires projectId.");
+		const pages = [];
+		for (const route of routes) {
+			if (!route || typeof route !== "object") continue;
+			const routeConfig = route as Record<string, unknown>;
+			if (typeof routeConfig.screenId !== "string" || typeof routeConfig.route !== "string") continue;
+			const html = await callDirectStitchHelper("get_screen_code", { projectId, screenId: routeConfig.screenId });
+			pages.push({ route: routeConfig.route, screenId: routeConfig.screenId, html });
+		}
+		return JSON.stringify({ projectId, pages }, null, 2);
+	}
+	return callStitchApiTool(toolName, data);
+}
+
 async function callStitchTool(toolName: string, data: unknown): Promise<string> {
 	const status = getStitchAuthStatus();
 	if (!status.configured) throw new Error(stitchSetupMessage(status));
-	return runStitchCli(buildStitchToolArgs(toolName, data));
+	if (getStitchDirectAuth()) return callDirectStitchHelper(toolName, data);
+	try {
+		return await runStitchCli(buildStitchToolArgs(toolName, data));
+	} catch (error) {
+		throw new Error(formatStitchError(error));
+	}
 }
 
 function textResult(text: string, details: Record<string, unknown> = {}) {

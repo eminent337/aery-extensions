@@ -3,7 +3,10 @@ import test from "node:test";
 import {
 	buildStitchEnv,
 	buildStitchToolArgs,
+	formatStitchError,
 	getStitchAuthStatus,
+	getStitchDirectAuth,
+	normalizeStitchToolPayload,
 	parseStitchCommand,
 	stitchSetupMessage,
 } from "./stitch.ts";
@@ -48,7 +51,7 @@ test("injects saved config into Stitch MCP environment", () => {
 });
 
 test("reports missing auth when no Stitch environment is configured", () => {
-	const status = getStitchAuthStatus({});
+	const status = getStitchAuthStatus({}, {});
 
 	assert.equal(status.mode, "missing");
 	assert.equal(status.configured, false);
@@ -64,6 +67,35 @@ test("builds stitch-mcp tool invocation arguments", () => {
 		"-d",
 		'{"filter":"view=owned"}',
 	]);
+});
+
+test("detects direct Stitch API auth from saved API key config", () => {
+	assert.deepEqual(getStitchDirectAuth({}, { authMode: "api-key", apiKey: "saved-key" }), {
+		kind: "api-key",
+		apiKey: "saved-key",
+	});
+});
+
+test("normalizes project resource names for raw Stitch API tools", () => {
+	assert.deepEqual(normalizeStitchToolPayload("list_screens", { projectName: "projects/123456" }), {
+		projectId: "123456",
+	});
+	assert.deepEqual(
+		normalizeStitchToolPayload("get_screen", { projectName: "projects/123456", screenId: "screen-a" }),
+		{
+			projectId: "123456",
+			screenId: "screen-a",
+			name: "projects/123456/screens/screen-a",
+		},
+	);
+});
+
+test("formats stitch-mcp schema reference errors with a direct API hint", () => {
+	assert.match(
+		formatStitchError(new Error("can't resolve reference #/$defs/ScreenInstance from id #")),
+		/Stitch MCP CLI failed while resolving its tool schema/,
+	);
+	assert.match(formatStitchError(new Error("can't resolve reference #/$defs/ScreenInstance from id #")), /direct Stitch API/);
 });
 
 test("parses stitch slash commands", () => {

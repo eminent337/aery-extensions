@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+	buildStitchEnv,
 	buildStitchToolArgs,
 	getStitchAuthStatus,
 	parseStitchCommand,
@@ -20,6 +21,30 @@ test("uses system gcloud auth when requested", () => {
 	assert.equal(status.mode, "gcloud");
 	assert.equal(status.configured, true);
 	assert.equal(status.projectId, "demo");
+});
+
+test("uses saved API key config when environment is empty", () => {
+	const status = getStitchAuthStatus({}, { authMode: "api-key", apiKey: "saved", projectId: "stitch-project" });
+
+	assert.equal(status.mode, "api-key");
+	assert.equal(status.configured, true);
+	assert.equal(status.projectId, "stitch-project");
+});
+
+test("injects saved config into Stitch MCP environment", () => {
+	assert.deepEqual(
+		buildStitchEnv(
+			{ PATH: "/bin" },
+			{ authMode: "gcloud", projectId: "demo-project", accessToken: "token" },
+		),
+		{
+			PATH: "/bin",
+			STITCH_USE_SYSTEM_GCLOUD: "1",
+			STITCH_PROJECT_ID: "demo-project",
+			GOOGLE_CLOUD_PROJECT: "demo-project",
+			STITCH_ACCESS_TOKEN: "token",
+		},
+	);
 });
 
 test("reports missing auth when no Stitch environment is configured", () => {

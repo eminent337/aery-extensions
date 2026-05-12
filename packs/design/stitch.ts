@@ -6,6 +6,9 @@
  */
 
 import { execFile } from "node:child_process";
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
 import { promisify } from "node:util";
 import type { ExtensionAPI } from "@eminent337/aery";
 import { Type } from "typebox";
@@ -13,8 +16,16 @@ import { Type } from "typebox";
 const execFileAsync = promisify(execFile);
 const STITCH_MCP_PACKAGE = "@_davideast/stitch-mcp";
 const STITCH_TIMEOUT_MS = 120_000;
+const STITCH_CONFIG_PATH = join(homedir(), ".aery", "agent", "stitch.json");
 
 type StitchAuthMode = "api-key" | "gcloud" | "configured" | "missing";
+
+export interface StitchConfig {
+	authMode?: "api-key" | "gcloud";
+	apiKey?: string;
+	projectId?: string;
+	accessToken?: string;
+}
 
 export interface StitchAuthStatus {
 	configured: boolean;
@@ -22,7 +33,28 @@ export interface StitchAuthStatus {
 	projectId?: string;
 }
 
-export function getStitchAuthStatus(env: NodeJS.ProcessEnv = process.env): StitchAuthStatus {
+function loadStitchConfig(): StitchConfig {
+	if (!existsSync(STITCH_CONFIG_PATH)) return {};
+	try {
+		const parsed = JSON.parse(readFileSync(STITCH_CONFIG_PATH, "utf-8")) as unknown;
+		return parsed && typeof parsed === "object" ? (parsed as StitchConfig) : {};
+	} catch {
+		return {};
+	}
+}
+
+function saveStitchConfig(config: StitchConfig): void {
+	mkdirSync(dirname(STITCH_CONFIG_PATH), { recursive: true });
+	writeFileSync(STITCH_CONFIG_PATH, `${JSON.stringify(config, null, 2)}\n`);
+	try {
+		chmodSync(STITCH_CONFIG_PATH, 0o600);
+	} catch {}
+}
+
+export function getStitchAuthStatus(
+	env: NodeJS.ProcessEnv = process.env,
+	config: StitchConfig = loadStitchConfig(),
+): StitchAuthStatus {
 	if (env.STITCH_API_KEY?.trim()) {
 		return { configured: true, mode: "api-key", projectId: env.STITCH_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT };
 	}
@@ -32,7 +64,29 @@ export function getStitchAuthStatus(env: NodeJS.ProcessEnv = process.env): Stitc
 	if (env.STITCH_PROJECT_ID?.trim() || env.GOOGLE_CLOUD_PROJECT?.trim() || env.STITCH_ACCESS_TOKEN?.trim()) {
 		return { configured: true, mode: "configured", projectId: env.STITCH_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT };
 	}
+	if (config.authMode === "api-key" && config.apiKey?.trim()) {
+		return { configured: true, mode: "api-key", projectId: config.projectId };
+	}
+	if (config.authMode === "gcloud") {
+		return { configured: true, mode: "gcloud", projectId: config.projectId };
+	}
+	if (config.projectId?.trim() || config.accessToken?.trim()) {
+		return { configured: true, mode: "configured", projectId: config.projectId };
+	}
 	return { configured: false, mode: "missing" };
+}
+
+export function buildStitchEnv(
+	env: NodeJS.ProcessEnv = process.env,
+	config: StitchConfig = loadStitchConfig(),
+): NodeJS.ProcessEnv {
+	const next = { ...env };
+	if (!next.STITCH_API_KEY && config.apiKey) next.STITCH_API_KEY = config.apiKey;
+	if (!next.STITCH_PROJECT_ID && config.projectId) next.STITCH_PROJECT_ID = config.projectId;
+	if (!next.GOOGLE_CLOUD_PROJECT && config.projectId) next.GOOGLE_CLOUD_PROJECT = config.projectId;
+	if (!next.STITCH_ACCESS_TOKEN && config.accessToken) next.STITCH_ACCESS_TOKEN = config.accessToken;
+	if (!next.STITCH_USE_SYSTEM_GCLOUD && config.authMode === "gcloud") next.STITCH_USE_SYSTEM_GCLOUD = "1";
+	return next;
 }
 
 export function stitchSetupMessage(status = getStitchAuthStatus()): string {
@@ -50,10 +104,9 @@ export function stitchSetupMessage(status = getStitchAuthStatus()): string {
 function stitchApiKeyInstructions(): string {
 	return [
 		"Stitch API key setup:",
-		"1. Create or copy your Stitch API key.",
-		"2. Start Aery with STITCH_API_KEY set.",
-		"   Example: STITCH_API_KEY=... aery",
-		"3. Run /stitch doctor.",
+		"Run /stitch auth api-key to save a Stitch API key for Aery.",
+		"You can also start Aery with STITCH_API_KEY set.",
+		"After setup, run /stitch doctor.",
 	].join("\n");
 }
 
@@ -61,10 +114,9 @@ function stitchGcloudInstructions(): string {
 	return [
 		"Stitch gcloud setup:",
 		"1. Run: gcloud auth application-default login",
-		"2. Run: gcloud config set project <PROJECT_ID>",
+		"2. Run /stitch auth gcloud and enter your project ID.",
 		"3. Enable the Stitch API for the project if required.",
-		"4. Start Aery with STITCH_USE_SYSTEM_GCLOUD=1.",
-		"5. Run /stitch doctor.",
+		"4. Run /stitch doctor.",
 	].join("\n");
 }
 
@@ -98,7 +150,7 @@ export function parseStitchCommand(input: string): { name: string; rest: string 
 }
 
 function buildCommonEnv(): NodeJS.ProcessEnv {
-	return { ...process.env };
+	return buildStitchEnv();
 }
 
 async function runStitchCli(args: string[], timeout = STITCH_TIMEOUT_MS): Promise<string> {
@@ -318,11 +370,38 @@ export default function stitchExtension(aery: ExtensionAPI) {
 			if (command.name === "auth" || command.name === "login" || command.name === "setup") {
 				const authMode = command.rest.toLowerCase();
 				if (authMode === "api-key" || authMode === "apikey" || authMode === "key") {
-					ctx.ui.notify(stitchApiKeyInstructions(), "info");
+					const apiKey = await ctx.ui.input("Enter Google Stitch API key:");
+					if (apiKey === undefined) return;
+					if (!apiKey.trim()) {
+						ctx.ui.notify("Stitch API key is required.", "warning");
+						return;
+					}
+					const projectId = await ctx.ui.input("Optional Google Cloud project ID:", process.env.GOOGLE_CLOUD_PROJECT ?? "");
+					saveStitchConfig({
+						...loadStitchConfig(),
+						authMode: "api-key",
+						apiKey: apiKey.trim(),
+						projectId: projectId?.trim() || undefined,
+					});
+					ctx.ui.notify(`Saved Stitch API-key configuration to ${STITCH_CONFIG_PATH}.\nRun /stitch doctor next.`, "info");
 					return;
 				}
 				if (authMode === "gcloud" || authMode === "google" || authMode === "adc") {
-					ctx.ui.notify(stitchGcloudInstructions(), "info");
+					const projectId = await ctx.ui.input("Google Cloud project ID for Stitch:", process.env.GOOGLE_CLOUD_PROJECT ?? "");
+					if (projectId === undefined) return;
+					if (!projectId.trim()) {
+						ctx.ui.notify("Google Cloud project ID is required for gcloud setup.", "warning");
+						return;
+					}
+					saveStitchConfig({
+						...loadStitchConfig(),
+						authMode: "gcloud",
+						projectId: projectId.trim(),
+					});
+					ctx.ui.notify(
+						`Saved Stitch gcloud configuration to ${STITCH_CONFIG_PATH}.\nMake sure you have run: gcloud auth application-default login\nThen run /stitch doctor.`,
+						"info",
+					);
 					return;
 				}
 				if (authMode === "guided" || authMode === "mcp" || authMode === "init") {
@@ -362,10 +441,37 @@ export default function stitchExtension(aery: ExtensionAPI) {
 					return;
 				}
 				if (choice.startsWith("API")) {
-					ctx.ui.notify(stitchApiKeyInstructions(), "info");
+					const apiKey = await ctx.ui.input("Enter Google Stitch API key:");
+					if (apiKey === undefined) return;
+					if (!apiKey.trim()) {
+						ctx.ui.notify("Stitch API key is required.", "warning");
+						return;
+					}
+					const projectId = await ctx.ui.input("Optional Google Cloud project ID:", process.env.GOOGLE_CLOUD_PROJECT ?? "");
+					saveStitchConfig({
+						...loadStitchConfig(),
+						authMode: "api-key",
+						apiKey: apiKey.trim(),
+						projectId: projectId?.trim() || undefined,
+					});
+					ctx.ui.notify(`Saved Stitch API-key configuration to ${STITCH_CONFIG_PATH}.\nRun /stitch doctor next.`, "info");
 					return;
 				}
-				ctx.ui.notify(stitchGcloudInstructions(), "info");
+				const projectId = await ctx.ui.input("Google Cloud project ID for Stitch:", process.env.GOOGLE_CLOUD_PROJECT ?? "");
+				if (projectId === undefined) return;
+				if (!projectId.trim()) {
+					ctx.ui.notify("Google Cloud project ID is required for gcloud setup.", "warning");
+					return;
+				}
+				saveStitchConfig({
+					...loadStitchConfig(),
+					authMode: "gcloud",
+					projectId: projectId.trim(),
+				});
+				ctx.ui.notify(
+					`Saved Stitch gcloud configuration to ${STITCH_CONFIG_PATH}.\nMake sure you have run: gcloud auth application-default login\nThen run /stitch doctor.`,
+					"info",
+				);
 				return;
 			}
 

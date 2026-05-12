@@ -114,7 +114,7 @@ export function stitchSetupMessage(status = getStitchAuthStatus()): string {
 	}
 	return [
 		"Stitch is not configured.",
-		"Run /stitch auth for guided setup, or set STITCH_API_KEY.",
+		"Run /stitch and choose a configuration option, or set STITCH_API_KEY.",
 		"For gcloud, set STITCH_USE_SYSTEM_GCLOUD=1 after configuring application-default credentials.",
 	].join("\n");
 }
@@ -312,6 +312,74 @@ function parseJsonObject(input: string): Record<string, unknown> {
 	}
 }
 
+function splitRawParams(params: Record<string, unknown>): { raw: boolean; payload: Record<string, unknown> } {
+	const { raw, ...payload } = params;
+	return { raw: raw === true, payload };
+}
+
+function parseStitchResultObject(result: string): Record<string, unknown> | undefined {
+	try {
+		const parsed = JSON.parse(result) as unknown;
+		if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed as Record<string, unknown>;
+	} catch {}
+	return undefined;
+}
+
+function shortId(name: unknown): string | undefined {
+	if (typeof name !== "string") return undefined;
+	const parts = name.split("/");
+	return parts[parts.length - 1] || undefined;
+}
+
+function compactProject(project: Record<string, unknown>): Record<string, unknown> {
+	return {
+		projectId: shortId(project.name),
+		name: project.name,
+		title: project.title,
+		visibility: project.visibility,
+		deviceType: project.deviceType,
+		projectType: project.projectType,
+		updateTime: project.updateTime,
+	};
+}
+
+function compactScreen(screen: Record<string, unknown>): Record<string, unknown> {
+	return {
+		screenId: shortId(screen.name) ?? screen.id,
+		name: screen.name,
+		title: screen.title ?? screen.displayName,
+		deviceType: screen.deviceType,
+		updateTime: screen.updateTime,
+		createTime: screen.createTime,
+	};
+}
+
+export function formatStitchToolResult(toolName: string, result: string, raw = false): string {
+	if (raw) return result;
+	const parsed = parseStitchResultObject(result);
+	if (!parsed) return result;
+
+	if (toolName === "list_projects" && Array.isArray(parsed.projects)) {
+		const projects = parsed.projects
+			.filter((project): project is Record<string, unknown> => !!project && typeof project === "object")
+			.map(compactProject);
+		return JSON.stringify({ projects, count: projects.length }, null, 2);
+	}
+
+	if (toolName === "get_project") {
+		return JSON.stringify(compactProject(parsed), null, 2);
+	}
+
+	if (toolName === "list_screens" && Array.isArray(parsed.screens)) {
+		const screens = parsed.screens
+			.filter((screen): screen is Record<string, unknown> => !!screen && typeof screen === "object")
+			.map(compactScreen);
+		return JSON.stringify({ screens, count: screens.length }, null, 2);
+	}
+
+	return result;
+}
+
 function maybeImageResult(result: string, details: Record<string, unknown>) {
 	let value = result.trim();
 	try {
@@ -349,10 +417,12 @@ export default function stitchExtension(aery: ExtensionAPI) {
 		promptSnippet: "Use stitch_list_projects to discover Stitch project IDs before fetching screens or code.",
 		parameters: Type.Object({
 			filter: Type.Optional(Type.String({ description: 'Optional Stitch filter, e.g. "view=owned" or "view=shared".' })),
+			raw: Type.Optional(Type.Boolean({ description: "Return the full uncompressed Stitch response." })),
 		}),
 		async execute(_id, params) {
-			const result = await callStitchTool("list_projects", params);
-			return textResult(result, { tool: "list_projects" });
+			const { raw, payload } = splitRawParams(params);
+			const result = await callStitchTool("list_projects", payload);
+			return textResult(formatStitchToolResult("list_projects", result, raw), { tool: "list_projects", raw });
 		},
 	});
 
@@ -362,10 +432,12 @@ export default function stitchExtension(aery: ExtensionAPI) {
 		description: "Get metadata for a Google Stitch project.",
 		parameters: Type.Object({
 			name: Type.String({ description: 'Project resource name, e.g. "projects/123456".' }),
+			raw: Type.Optional(Type.Boolean({ description: "Return the full uncompressed Stitch response." })),
 		}),
 		async execute(_id, params) {
-			const result = await callStitchTool("get_project", params);
-			return textResult(result, { tool: "get_project" });
+			const { raw, payload } = splitRawParams(params);
+			const result = await callStitchTool("get_project", payload);
+			return textResult(formatStitchToolResult("get_project", result, raw), { tool: "get_project", raw });
 		},
 	});
 
@@ -376,10 +448,12 @@ export default function stitchExtension(aery: ExtensionAPI) {
 		promptSnippet: "Use stitch_list_screens after choosing a Stitch project to find screen IDs.",
 		parameters: Type.Object({
 			projectName: Type.String({ description: 'Project resource name, e.g. "projects/123456".' }),
+			raw: Type.Optional(Type.Boolean({ description: "Return the full uncompressed Stitch response." })),
 		}),
 		async execute(_id, params) {
-			const result = await callStitchTool("list_screens", params);
-			return textResult(result, { tool: "list_screens" });
+			const { raw, payload } = splitRawParams(params);
+			const result = await callStitchTool("list_screens", payload);
+			return textResult(formatStitchToolResult("list_screens", result, raw), { tool: "list_screens", raw });
 		},
 	});
 
@@ -472,11 +546,15 @@ export default function stitchExtension(aery: ExtensionAPI) {
 		parameters: Type.Object({
 			toolName: Type.String({ description: "Underlying Stitch MCP tool name." }),
 			inputJson: Type.Optional(Type.String({ description: "JSON object payload for the tool." })),
+			raw: Type.Optional(Type.Boolean({ description: "Return the full uncompressed Stitch response." })),
 		}),
 		async execute(_id, params) {
 			const payload = parseJsonObject(params.inputJson ?? "{}");
 			const result = await callStitchTool(params.toolName, payload);
-			return textResult(result, { tool: params.toolName });
+			return textResult(formatStitchToolResult(params.toolName, result, params.raw === true), {
+				tool: params.toolName,
+				raw: params.raw === true,
+			});
 		},
 	});
 
@@ -484,6 +562,12 @@ export default function stitchExtension(aery: ExtensionAPI) {
 		description: "Open the Google Stitch integration menu.",
 		handler: async (args, ctx) => {
 			parseStitchCommand(args);
+			const runInBackground = (label: string, task: () => Promise<string>, format: (result: string) => string = (result) => result) => {
+				ctx.ui.notify(`${label}...`, "info");
+				void task()
+					.then((result) => ctx.ui.notify(format(result), "info"))
+					.catch((error) => ctx.ui.notify(error instanceof Error ? error.message : String(error), "error"));
+			};
 			const choice = await ctx.ui.select("Google Stitch", stitchMainMenuOptions());
 			if (!choice || choice === STITCH_MENU.cancel) return;
 
@@ -545,21 +629,14 @@ export default function stitchExtension(aery: ExtensionAPI) {
 			}
 
 			if (choice === STITCH_MENU.doctor) {
-				ctx.ui.notify("Running Stitch doctor...", "info");
-				try {
-					ctx.ui.notify(await runStitchCli(["-y", STITCH_MCP_PACKAGE, "doctor"]), "info");
-				} catch (error) {
-					ctx.ui.notify(`Stitch doctor failed: ${error instanceof Error ? error.message : String(error)}`, "error");
-				}
+				runInBackground("Running Stitch doctor", () => runStitchCli(["-y", STITCH_MCP_PACKAGE, "doctor"]));
 				return;
 			}
 
 			if (choice === STITCH_MENU.projects) {
-				try {
-					ctx.ui.notify(await callStitchTool("list_projects", {}), "info");
-				} catch (error) {
-					ctx.ui.notify(error instanceof Error ? error.message : String(error), "error");
-				}
+				runInBackground("Fetching Stitch projects", () => callStitchTool("list_projects", {}), (result) =>
+					formatStitchToolResult("list_projects", result),
+				);
 				return;
 			}
 
@@ -570,11 +647,11 @@ export default function stitchExtension(aery: ExtensionAPI) {
 					ctx.ui.notify("Project ID is required.", "warning");
 					return;
 				}
-				try {
-					ctx.ui.notify(await callStitchTool("list_screens", { projectName: projectName.trim() }), "info");
-				} catch (error) {
-					ctx.ui.notify(error instanceof Error ? error.message : String(error), "error");
-				}
+				runInBackground(
+					"Fetching Stitch screens",
+					() => callStitchTool("list_screens", { projectName: projectName.trim() }),
+					(result) => formatStitchToolResult("list_screens", result),
+				);
 				return;
 			}
 		},

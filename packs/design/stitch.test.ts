@@ -4,6 +4,7 @@ import {
 	buildStitchEnv,
 	buildStitchToolArgs,
 	formatStitchError,
+	formatStitchToolResult,
 	getStitchAuthStatus,
 	getStitchDirectAuth,
 	normalizeStitchToolPayload,
@@ -56,7 +57,7 @@ test("reports missing auth when no Stitch environment is configured", () => {
 
 	assert.equal(status.mode, "missing");
 	assert.equal(status.configured, false);
-	assert.match(stitchSetupMessage(status), /\/stitch auth/);
+	assert.match(stitchSetupMessage(status), /Run \/stitch/);
 });
 
 test("builds stitch-mcp tool invocation arguments", () => {
@@ -111,4 +112,48 @@ test("stitch main menu prioritizes interactive configuration", () => {
 		"Configure with gcloud",
 		"Guided Stitch MCP setup",
 	]);
+});
+
+test("formats Stitch project lists without heavyweight fields by default", () => {
+	const result = formatStitchToolResult(
+		"list_projects",
+		JSON.stringify({
+			projects: [
+				{
+					name: "projects/123456",
+					title: "Dashboard",
+					visibility: "PRIVATE",
+					deviceType: "DESKTOP",
+					projectType: "PROJECT_DESIGN",
+					updateTime: "2026-05-01T00:00:00Z",
+					thumbnailScreenshot: { downloadUrl: "https://example.com/very-long-image" },
+					designTheme: { designMd: "huge theme document", namedColors: { primary: "#000" } },
+				},
+			],
+		}),
+	);
+
+	assert.deepEqual(JSON.parse(result), {
+		projects: [
+			{
+				projectId: "123456",
+				name: "projects/123456",
+				title: "Dashboard",
+				visibility: "PRIVATE",
+				deviceType: "DESKTOP",
+				projectType: "PROJECT_DESIGN",
+				updateTime: "2026-05-01T00:00:00Z",
+			},
+		],
+		count: 1,
+	});
+	assert.doesNotMatch(result, /downloadUrl|designTheme|designMd/);
+});
+
+test("keeps raw Stitch project output when requested", () => {
+	const raw = JSON.stringify({
+		projects: [{ name: "projects/123456", thumbnailScreenshot: { downloadUrl: "https://example.com/raw" } }],
+	});
+
+	assert.equal(formatStitchToolResult("list_projects", raw, true), raw);
 });

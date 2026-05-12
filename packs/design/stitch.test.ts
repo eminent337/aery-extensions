@@ -199,3 +199,15 @@ test("formats generated screens without dumping output components", () => {
 	});
 	assert.doesNotMatch(result, /outputComponents|styleGuidelines/);
 });
+
+test("formats screen code without dumping full html by default", () => {
+	const html = "<!DOCTYPE html><html><head><title>Demo</title></head><body><main>Hello</main></body></html>";
+	const result = formatStitchToolResult("get_screen_code", html);
+	const parsed = JSON.parse(result);
+
+	assert.equal(parsed.kind, "html");
+	assert.equal(parsed.htmlLength, html.length);
+	assert.equal(parsed.hasDoctype, true);
+	assert.match(parsed.preview, /<!DOCTYPE html>/);
+	assert.doesNotMatch(result, /<body><main>Hello<\/main><\/body>/);
+});

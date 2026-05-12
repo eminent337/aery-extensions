@@ -368,10 +368,29 @@ function generatedScreensFromResult(parsed: Record<string, unknown>): Record<str
 	});
 }
 
+function compactTextPreview(value: string, maxLength = 80): string {
+	const squashed = value.replace(/\s+/g, " ").trim();
+	return squashed.length > maxLength ? `${squashed.slice(0, maxLength)}...` : squashed;
+}
+
 export function formatStitchToolResult(toolName: string, result: string, raw = false): string {
 	if (raw) return result;
 	const parsed = parseStitchResultObject(result);
-	if (!parsed) return result;
+	if (!parsed) {
+		if (toolName === "get_screen_code") {
+			return JSON.stringify(
+				{
+					kind: "html",
+					htmlLength: result.length,
+					hasDoctype: /<!doctype html>/i.test(result),
+					preview: compactTextPreview(result),
+				},
+				null,
+				2,
+			);
+		}
+		return result;
+	}
 
 	if (toolName === "list_projects" && Array.isArray(parsed.projects)) {
 		const projects = parsed.projects
@@ -518,10 +537,12 @@ export default function stitchExtension(aery: ExtensionAPI) {
 		parameters: Type.Object({
 			projectId: Type.String({ description: "Numeric Stitch project ID." }),
 			screenId: Type.String({ description: "Stitch screen ID." }),
+			raw: Type.Optional(Type.Boolean({ description: "Return the full HTML instead of a compact summary." })),
 		}),
 		async execute(_id, params) {
-			const result = await callStitchTool("get_screen_code", params);
-			return textResult(result, { tool: "get_screen_code" });
+			const { raw, payload } = splitRawParams(params);
+			const result = await callStitchTool("get_screen_code", payload);
+			return textResult(formatStitchToolResult("get_screen_code", result, raw), { tool: "get_screen_code", raw });
 		},
 	});
 

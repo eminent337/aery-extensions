@@ -6,7 +6,6 @@
       "auto": true,
       "extensions": [
         "damage-control",
-        "provider-profiles",
         "model-failover",
         "aery-header",
         "aery-footer",

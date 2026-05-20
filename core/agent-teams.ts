@@ -1,7 +1,6 @@
 /**
  * Aery Agent Teams
  * Full team protocol: config.json, task queue, inboxes, idle/shutdown.
- * Mirrors Claude Code's Agent Teams filesystem protocol.
  */
 
 import { existsSync, writeFileSync, readFileSync, mkdirSync, readdirSync, unlinkSync, rmSync } from "node:fs";

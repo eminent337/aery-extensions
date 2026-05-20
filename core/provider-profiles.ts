@@ -1,5 +1,5 @@
 /**
- * Aery Provider Wizard — matches OpenClaude's /provider flow.
+ * Aery Provider Wizard — provider setup flow.
  * Multi-step: choose type → configure → save profile.
  * Includes Auto (smart routing) as a provider option.
  */
@@ -276,7 +276,7 @@ export default function (aery: ExtensionAPI) {
 			const d = loadProfiles();
 			const currentLabel = d.active ?? "none";
 
-			// Build options — same as OpenClaude
+			// Build options
 			const options = [
 				"Auto              — Smart routing across all working models",
 				"Ollama            — Use a local Ollama model with no API key",

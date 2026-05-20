@@ -377,9 +377,10 @@ async function runSingleAgent(
 	if (effectiveModel) args.push("--model", effectiveModel);
 	if (agent.tools && agent.tools.length > 0) args.push("--tools", agent.tools.join(","));
 
-	// Fork mode: pass parent's conversation to child
+	// Fork mode: pass parent's conversation to child for prompt cache sharing
 	let tmpForkDir: string | null = null;
 	let tmpForkPath: string | null = null;
+	let isFork = false;
 	if (fork && getConversation) {
 		try {
 			const conversation = getConversation();
@@ -389,6 +390,7 @@ async function runSingleAgent(
 				tmpForkPath = join(tmpDir, "messages.json");
 				writeFileSync(tmpForkPath, JSON.stringify(conversation, null, 2));
 				args.push("--initial-messages", tmpForkPath);
+				isFork = true;
 			}
 		} catch {
 			// Fork context is optional — fall back to fresh context
@@ -420,18 +422,29 @@ async function runSingleAgent(
 	};
 
 	try {
-		if (agent.systemPrompt.trim()) {
-			const memory = loadAgentMemory(agent.name);
-			const fullPrompt = memory
-				? `<agent-memory>\n${memory}\n</agent-memory>\n\n${agent.systemPrompt}`
-				: agent.systemPrompt;
-			const tmp = await writePromptToTempFile(agent.name, fullPrompt);
-			tmpPromptDir = tmp.dir;
-			tmpPromptPath = tmp.filePath;
-			args.push("--append-system-prompt", tmpPromptPath);
+		// In fork mode, agent instructions are injected as user message (not system prompt)
+		// to preserve prompt cache hits from parent's system prompt
+		if (!fork) {
+			if (agent.systemPrompt.trim()) {
+				const memory = loadAgentMemory(agent.name);
+				const fullPrompt = memory
+					? `<agent-memory>\n${memory}\n</agent-memory>\n\n${agent.systemPrompt}`
+					: agent.systemPrompt;
+				const tmp = await writePromptToTempFile(agent.name, fullPrompt);
+				tmpPromptDir = tmp.dir;
+				tmpPromptPath = tmp.filePath;
+				args.push("--append-system-prompt", tmpPromptPath);
+			}
 		}
 
-		args.push(`Task: ${task}`);
+		// In fork mode, inject agent directive as part of the task (not as system prompt)
+		// This preserves prompt cache hits from parent's system prompt
+		if (isFork && agent.systemPrompt.trim()) {
+			const directive = `[Fork directive — you are acting as "${agent.name}"]\n\n${agent.systemPrompt}\n\nStay within your directive's scope. Use your tools directly. Keep your report under 500 words.`;
+			args.push(`Task: ${directive}\n\nSpecific task: ${task}`);
+		} else {
+			args.push(`Task: ${task}`);
+		}
 		let wasAborted = false;
 
 		const exitCode = await new Promise<number>((resolve) => {

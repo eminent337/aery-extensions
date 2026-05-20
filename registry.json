@@ -16,7 +16,8 @@
         "auto-fix",
         "file-history",
         "agent-routing",
-        "coordinator-mode"
+        "coordinator-mode",
+        "aery-extension"
       ],
       "source": "eminent337/aery-extensions/core"
     },
@@ -203,11 +204,6 @@
       "source": "eminent337/aery-extensions",
       "file": "packs/full/agent-teams.ts",
       "type": "extension"
-    },
-    "aery-extension": {
-      "description": "Aery extension pack \u2014 LSP code intelligence, MCP client, notebook editing, background monitoring, cron scheduling",
-      "extensions": ["aery-extension"],
-      "source": "eminent337/aery-extensions/packs/aery-extension"
     }
   }
 }

@@ -1,7 +1,6 @@
 /**
- * Aery Extension Pack
+ * Aery Extension — Advanced tools integrated into core
  *
- * Advanced tools for Aery:
  * - LSP Tool: IDE-level code intelligence (9 operations)
  * - MCP Client: Model Context Protocol (dynamic tool discovery)
  * - Monitor Tool: Background process watching with stdout streaming

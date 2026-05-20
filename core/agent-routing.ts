@@ -109,28 +109,4 @@ export default function agentRouting(pi: ExtensionAPI): void {
 		currentAgent = null;
 	});
 
-	// Register a command to show routing config
-	pi.registerCommand("routing", {
-		description: "Show agent routing configuration",
-		handler: (_args, ctx) => {
-			const lines: string[] = ["Agent Routing:"];
-
-			for (const [agent, model] of Object.entries(config.routing)) {
-				const modelConfig = config.models?.[model];
-				const display = modelConfig
-					? `${modelConfig.provider ?? "default"}/${modelConfig.model}`
-					: model;
-				lines.push(`  ${agent} → ${display}`);
-			}
-
-			if (Object.keys(config.routing).length === 0) {
-				lines.push("  No routing configured.");
-				lines.push(
-					"  Configure in ~/.aery/agent/agent-routing.json",
-				);
-			}
-
-			ctx.ui.notify(lines.join("\n"), "info");
-		},
-	});
 }

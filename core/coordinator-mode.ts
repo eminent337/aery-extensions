@@ -256,38 +256,6 @@ After completing your task, report what you found.`;
 		},
 	});
 
-	// ─── Coordinator Command ─────────────────────────────────────────────
-	pi.registerCommand("coordinator", {
-		description: "Enter coordinator mode for multi-agent orchestration",
-		handler: (_args, ctx) => {
-			coordinatorActive = true;
-			workers.clear();
-
-			// Inject coordinator system prompt
-			pi.sendUserMessage(
-				`${COORDINATOR_SYSTEM_PROMPT}\n\nYou are now in Coordinator Mode. Use spawn_worker to delegate work, read_scratchpad to collect results, and TaskCreate to track progress.`,
-			);
-
-			ctx.ui.notify("Entered Coordinator Mode", "info");
-		},
-	});
-
-	// ─── Workers Command ─────────────────────────────────────────────────
-	pi.registerCommand("workers", {
-		description: "List active workers",
-		handler: (_args, ctx) => {
-			if (workers.size === 0) {
-				ctx.ui.notify("No active workers", "info");
-				return;
-			}
-
-			const lines = [...workers.values()].map(
-				(w) => `${w.name} [${w.status}]: ${w.task.slice(0, 60)}`,
-			);
-			ctx.ui.notify(lines.join("\n"), "info");
-		},
-	});
-
 	// ─── Cleanup on shutdown ─────────────────────────────────────────────
 	pi.on("session_shutdown", () => {
 		workers.clear();

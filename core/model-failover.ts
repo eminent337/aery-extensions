@@ -115,27 +115,4 @@ export default function (aery: ExtensionAPI) {
 
 		ctx.ui.notify("Failover: all fallback models exhausted", "error");
 	});
-
-	aery.registerCommand("failover", {
-		description: "Manage model failover",
-		handler: async (args, ctx) => {
-			if (!args) {
-				const status = config?.enabled ? "enabled" : "disabled";
-				const failed = Array.from(failedModels).join(", ") || "none";
-				ctx.ui.notify(`Failover: ${status}\nFailed models: ${failed}`, "info");
-				return;
-			}
-
-			if (args === "reset") {
-				failedModels.clear();
-				failureTimestamps.clear();
-				ctx.ui.notify("Failover: cleared failed models list", "info");
-			} else if (args === "reload") {
-				config = loadConfig();
-				ctx.ui.notify("Failover: config reloaded", "info");
-			} else {
-				ctx.ui.notify("Usage: /failover [reset|reload]", "error");
-			}
-		},
-	});
 }

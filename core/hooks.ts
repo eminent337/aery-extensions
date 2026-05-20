@@ -159,15 +159,6 @@ export default function (aery: ExtensionAPI) {
 		hooks = loadHooks();
 	});
 
-	// Reload hooks on /reload
-	aery.registerCommand("aery-hooks-reload", {
-		description: "Reload hooks.yaml (internal)",
-		handler: async (_args, ctx) => {
-			hooks = loadHooks();
-			ctx.ui.notify("Hooks reloaded from ~/.aery/agent/hooks.yaml", "info");
-		},
-	});
-
 	aery.on("tool_call", async (event, ctx) => {
 		const entries = hooks.PreToolUse ?? [];
 		if (!entries.length) return;

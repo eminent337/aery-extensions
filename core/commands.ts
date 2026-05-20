@@ -1,10 +1,7 @@
 /**
- * Aery Slash Commands — essential git workflow and utility commands
+ * Aery Slash Commands — essential git workflow commands
  */
 
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-import { homedir } from "node:os";
 import type { ExtensionAPI } from "@eminent337/aery";
 
 export default function (aery: ExtensionAPI) {
@@ -34,17 +31,6 @@ export default function (aery: ExtensionAPI) {
 		},
 	});
 
-	// /branch
-	aery.registerCommand("branch", {
-		description: "Create a new git branch",
-		handler: async (args, _ctx) => {
-			const { stdout: current } = await aery.exec("git", ["branch", "--show-current"]).catch(() => ({ stdout: "unknown" }));
-			aery.sendUserMessage(
-				`Current branch: ${current.trim()}\n\nCreate a new git branch${args ? ` for: ${args}` : ""}. Use kebab-case. Run: git checkout -b <name>`
-			);
-		},
-	});
-
 	// /review
 	aery.registerCommand("review", {
 		description: "Code review on current changes or a PR",
@@ -65,40 +51,6 @@ export default function (aery: ExtensionAPI) {
 			if (!status.trim()) { ctx.ui.notify("No uncommitted changes", "info"); return; }
 			const { stdout: diff } = await aery.exec("git", ["diff", "--stat", "HEAD"]).catch(() => ({ stdout: "" }));
 			ctx.ui.notify(`Changes:\n${status}\n\n${diff}`, "info");
-		},
-	});
-
-	// /effort — set thinking level
-	aery.registerCommand("effort", {
-		description: "Set reasoning effort: off | minimal | low | medium | high | xhigh",
-		handler: async (args, ctx) => {
-			const level = (args?.trim() || "medium") as any;
-			const valid = ["off", "minimal", "low", "medium", "high", "xhigh"];
-			if (!valid.includes(level)) { ctx.ui.notify(`Valid levels: ${valid.join(", ")}`, "warning"); return; }
-			aery.setThinkingLevel(level);
-			ctx.ui.notify(`Thinking level: ${level}`, "info");
-		},
-	});
-
-	// /doctor — diagnose installation
-	aery.registerCommand("doctor", {
-		description: "Diagnose aery installation",
-		handler: async (_args, ctx) => {
-			const checks: [string, string][] = [];
-			const check = async (label: string, cmd: string, args: string[]) => {
-				try {
-					const r = await aery.exec(cmd, args);
-					checks.push([label, r.stdout.trim().split("\n")[0]]);
-				} catch {
-					checks.push([label, "not found"]);
-				}
-			};
-			await check("node", "node", ["--version"]);
-			await check("git", "git", ["--version"]);
-			await check("gh CLI", "which", ["gh"]);
-			checks.push(["~/.aery/agent/", existsSync(join(homedir(), ".aery", "agent")) ? "exists" : "missing"]);
-			checks.push(["auth.json", existsSync(join(homedir(), ".aery", "agent", "auth.json")) ? "exists" : "missing"]);
-			ctx.ui.notify(checks.map(([k, v]) => `${k}: ${v}`).join("\n"), "info");
 		},
 	});
 }

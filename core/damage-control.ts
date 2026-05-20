@@ -47,14 +47,6 @@ const ALWAYS_BLOCK = [
 export default function (aery: ExtensionAPI) {
 	let config = loadConfig();
 
-	aery.registerCommand("aery-dc-reload", {
-		description: "Reload damage-control rules (internal)",
-		handler: async (_args, ctx) => {
-			config = loadConfig();
-			ctx.ui.notify("Damage control rules reloaded", "info");
-		},
-	});
-
 	aery.on("tool_call", async (event, _ctx) => {
 		const toolName = event.toolName;
 		const input = event.input as any;

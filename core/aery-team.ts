@@ -43,27 +43,4 @@ export default function (pi: ExtensionAPI) {
 		return { systemPrompt: `${_event.systemPrompt}\n\n${SPECIALIST_CONTEXT}` };
 	});
 
-	// /aery-collab — shows who does what and how handoffs work
-	pi.registerCommand("aery-collab", {
-		description: "Show aery specialist collaboration map — who owns what and how agents hand off to each other",
-		handler: async (_args, ctx) => {
-			ctx.ui.notify(`**Aery Specialist Collaboration**
-
-**Package ownership:**
-- \`aery-ai\`    → packages/ai (providers, streaming, models)
-- \`aery-agent\` → packages/agent (core loop, tools, context)
-- \`aery-tui\`   → packages/tui + web-ui (UI, keybindings)
-- \`aery-mom\`   → packages/mom (Slack bot, orchestration)
-- \`aery-pods\`  → packages/pods (GPU, vLLM, serving)
-- \`aery-core\`  → root, scripts, git, cross-package
-- \`aery-review\`→ final quality gate (read-only)
-
-**Collaboration chains:**
-\`/chain scout the relevant code for X | implement X in the right package | review the changes\`
-\`/chain add provider Y to packages/ai | update coding-agent to expose it | review\`
-\`/chain find the keybinding bug in tui | fix it | verify npm run check passes\`
-
-Each step receives the previous step's output. End each step with a handoff summary.`, "info");
-		},
-	});
 }

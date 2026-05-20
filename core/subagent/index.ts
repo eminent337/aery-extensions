@@ -20,7 +20,7 @@ import { type ExtensionAPI, getMarkdownTheme, withFileMutationQueue } from "@emi
 import type { Message } from "@eminent337/aery-ai";
 import { StringEnum } from "@eminent337/aery-ai";
 import type { AgentToolResult } from "@eminent337/aery-core";
-import { Container, Markdown, Spacer, Text } from "@eminent337/aery-tui";
+import { Container, Markdown, Spacer, Text } from "@eminent337/aery/tui";
 import { Type } from "typebox";
 import { type AgentConfig, type AgentScope, discoverAgents, loadAgentMemory } from "./agents.js";
 
@@ -170,6 +170,113 @@ function getFinalOutput(messages: Message[]): string {
 		}
 	}
 	return "";
+}
+
+interface StructuredOutput {
+	scope?: string;
+	result?: string;
+	keyFiles?: string[];
+	filesChanged?: string[];
+	issues?: string[];
+}
+
+function parseStructuredOutput(text: string): StructuredOutput {
+	const output: StructuredOutput = {};
+
+	const scopeMatch = text.match(/Scope:\s*(.+?)(?:\n|$)/);
+	if (scopeMatch) output.scope = scopeMatch[1].trim();
+
+	const resultMatch = text.match(/Result:\s*([\s\S]+?)(?=\nKey files:|$)/);
+	if (resultMatch) output.result = resultMatch[1].trim();
+
+	const keyFilesMatch = text.match(/Key files:\s*([\s\S]+?)(?=\nFiles changed:|$)/);
+	if (keyFilesMatch) {
+		output.keyFiles = keyFilesMatch[1]
+			.split("\n")
+			.map((l) => l.replace(/^[-*]\s*/, "").trim())
+			.filter(Boolean);
+	}
+
+	const filesChangedMatch = text.match(/Files changed:\s*([\s\S]+?)(?=\nIssues:|$)/);
+	if (filesChangedMatch) {
+		output.filesChanged = filesChangedMatch[1]
+			.split("\n")
+			.map((l) => l.replace(/^[-*]\s*/, "").trim())
+			.filter(Boolean);
+	}
+
+	const issuesMatch = text.match(/Issues:\s*([\s\S]+?)$/);
+	if (issuesMatch) {
+		const issuesText = issuesMatch[1].trim();
+		if (issuesText.toLowerCase() !== "none") {
+			output.issues = issuesText
+				.split("\n")
+				.map((l) => l.replace(/^[-*]\s*/, "").trim())
+				.filter(Boolean);
+		}
+	}
+
+	return output;
+}
+
+function synthesizeParallelResults(results: SingleResult[]): string {
+	const successResults = results.filter((r) => r.exitCode === 0);
+	const failedResults = results.filter((r) => r.exitCode !== 0);
+
+	const sections: string[] = [];
+
+	// Header
+	sections.push(`## Parallel Execution Summary`);
+	sections.push(`${successResults.length}/${results.length} agents succeeded\n`);
+
+	// Successes
+	if (successResults.length > 0) {
+		sections.push(`### Successful Agents`);
+		for (const r of successResults) {
+			const output = getFinalOutput(r.messages);
+			const structured = parseStructuredOutput(output);
+
+			sections.push(`\n**${r.agent}**`);
+			if (structured.scope) sections.push(`Scope: ${structured.scope}`);
+			if (structured.result) sections.push(`Result: ${structured.result}`);
+			if (structured.keyFiles?.length) sections.push(`Key files: ${structured.keyFiles.join(", ")}`);
+			if (structured.filesChanged?.length) sections.push(`Files changed: ${structured.filesChanged.join(", ")}`);
+			if (structured.issues?.length) sections.push(`Issues: ${structured.issues.join(", ")}`);
+		}
+	}
+
+	// Failures
+	if (failedResults.length > 0) {
+		sections.push(`\n### Failed Agents`);
+		for (const r of failedResults) {
+			const errorMsg = r.errorMessage || r.stderr || getFinalOutput(r.messages) || "(no output)";
+			sections.push(`\n**${r.agent}**: ${errorMsg.slice(0, 200)}`);
+		}
+	}
+
+	// Aggregate issues
+	const allIssues = successResults
+		.flatMap((r) => parseStructuredOutput(getFinalOutput(r.messages)).issues ?? [])
+		.filter(Boolean);
+	if (allIssues.length > 0) {
+		sections.push(`\n### All Issues`);
+		for (const issue of allIssues) {
+			sections.push(`- ${issue}`);
+		}
+	}
+
+	// Aggregate files changed
+	const allFilesChanged = successResults
+		.flatMap((r) => parseStructuredOutput(getFinalOutput(r.messages)).filesChanged ?? [])
+		.filter(Boolean);
+	if (allFilesChanged.length > 0) {
+		sections.push(`\n### Files Changed`);
+		for (const file of [...new Set(allFilesChanged)]) {
+			sections.push(`- ${file}`);
+		}
+	}
+
+	return sections.join("\n");
 }
 
 type DisplayItem = { type: "text"; text: string } | { type: "toolCall"; name: string; args: Record<string, any> };
@@ -627,17 +734,12 @@ export default function (pi: ExtensionAPI) {
 					return result;
 				});
 
-				const successCount = results.filter((r) => r.exitCode === 0).length;
-				const summaries = results.map((r) => {
-					const output = getFinalOutput(r.messages);
-					const preview = output.slice(0, 100) + (output.length > 100 ? "..." : "");
-					return `[${r.agent}] ${r.exitCode === 0 ? "completed" : "failed"}: ${preview || "(no output)"}`;
-				});
+				const synthesis = synthesizeParallelResults(results);
 				return {
 					content: [
 						{
 							type: "text",
-							text: `Parallel: ${successCount}/${results.length} succeeded\n\n${summaries.join("\n\n")}`,
+							text: synthesis,
 						},
 					],
 					details: makeDetails("parallel")(results),

@@ -20,7 +20,7 @@ aery install eminent337/aery-extensions/packs/full
 | Pack | Description | Status |
 |------|-------------|--------|
 | `core` | Essential extensions (auto-installed) | ✅ |
-| `full` | All 27 extensions | ✅ |
+| `full` | All extensions | ✅ |
 | `stitch` | Google Stitch design tools for Aery | ✅ |
 | `geospatial` | GDAL, GIS tools | 🔜 Coming soon |
 | `data-science` | Jupyter, pandas helpers | 🔜 Coming soon |

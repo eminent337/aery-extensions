@@ -7,18 +7,23 @@
       "extensions": [
         "damage-control",
         "model-failover",
-        "aery-header",
-        "aery-footer",
         "marketplace",
         "session-auto-name",
         "upstream-notify",
-        "init-prompt"
+        "init-prompt",
+        "hooks-enhanced",
+        "tool-deferral",
+        "auto-fix",
+        "file-history",
+        "agent-routing",
+        "coordinator-mode"
       ],
       "source": "eminent337/aery-extensions/core"
     },
     "full": {
-      "description": "All 27 Aery extensions \u2014 multi-agent, loop, session memory, and more",
+      "description": "All Aery extensions \u2014 multi-agent, loop, session memory, graphify, and more",
       "extensions": [
+        "graphify",
         "loop",
         "worktree",
         "todo-manager",
@@ -29,8 +34,7 @@
         "user-model",
         "skill-watcher",
         "skill-autocreate",
-        "health",
-        "graphify"
+        "health"
       ],
       "source": "eminent337/aery-extensions/packs/full"
     },
@@ -86,13 +90,6 @@
       "install": "https://github.com/ifiokjr/oh-pi",
       "type": "bundle"
     },
-    "graphify": {
-      "description": "Turn any folder of files (code, docs, papers, images, video) into a queryable knowledge graph. Outputs interactive HTML, GraphRAG-ready JSON, and GRAPH_REPORT.md. Requires: pip install graphifyy",
-      "source": "eminent337/aery-extensions",
-      "file": "packs/full/graphify.ts",
-      "type": "extension",
-      "postInstall": "graphify install --platform codex"
-    },
     "superpowers": {
       "description": "Structured development methodology \u2014 brainstorm, plan, TDD, debug, review. Adapted from obra/superpowers for Aery.",
       "source": "eminent337/aery-superpowers",
@@ -116,6 +113,12 @@
       "extensions": [],
       "source": "eminent337/aery-extensions/packs/data-science",
       "coming_soon": true
+    },
+    "graphify": {
+      "description": "Knowledge graph for codebases \u2014 persistent graph of project structure, god nodes, community detection. Requires Python graphify package.",
+      "source": "eminent337/aery-extensions",
+      "file": "core/graphify.ts",
+      "type": "extension"
     },
     "loop": {
       "description": "Loop agent \u2014 repeats tasks until a condition is met or manually stopped",
@@ -200,6 +203,11 @@
       "source": "eminent337/aery-extensions",
       "file": "packs/full/agent-teams.ts",
       "type": "extension"
+    },
+    "aery-extension": {
+      "description": "Aery extension pack \u2014 LSP code intelligence, MCP client, notebook editing, background monitoring, cron scheduling",
+      "extensions": ["aery-extension"],
+      "source": "eminent337/aery-extensions/packs/aery-extension"
     }
   }
 }

@@ -353,6 +353,8 @@ async function runSingleAgent(
 	onUpdate: OnUpdateCallback | undefined,
 	makeDetails: (results: SingleResult[]) => SubagentDetails,
 	parentModel?: string,
+	fork: boolean = false,
+	getConversation?: () => Message[],
 ): Promise<SingleResult> {
 	const agent = agents.find((a) => a.name === agentName);
 
@@ -374,6 +376,24 @@ async function runSingleAgent(
 	const effectiveModel = agent.model ?? parentModel;
 	if (effectiveModel) args.push("--model", effectiveModel);
 	if (agent.tools && agent.tools.length > 0) args.push("--tools", agent.tools.join(","));
+
+	// Fork mode: pass parent's conversation to child
+	let tmpForkDir: string | null = null;
+	let tmpForkPath: string | null = null;
+	if (fork && getConversation) {
+		try {
+			const conversation = getConversation();
+			if (conversation.length > 0) {
+				const tmpDir = await makeTempDir("aery-fork-");
+				tmpForkDir = tmpDir;
+				tmpForkPath = join(tmpDir, "messages.json");
+				writeFileSync(tmpForkPath, JSON.stringify(conversation, null, 2));
+				args.push("--initial-messages", tmpForkPath);
+			}
+		} catch {
+			// Fork context is optional — fall back to fresh context
+		}
+	}
 
 	let tmpPromptDir: string | null = null;
 	let tmpPromptPath: string | null = null;
@@ -509,6 +529,18 @@ async function runSingleAgent(
 			} catch {
 				/* ignore */
 			}
+		if (tmpForkPath)
+			try {
+				fs.unlinkSync(tmpForkPath);
+			} catch {
+				/* ignore */
+			}
+		if (tmpForkDir)
+			try {
+				fs.rmdirSync(tmpForkDir);
+			} catch {
+				/* ignore */
+			}
 	}
 }
 
@@ -534,6 +566,7 @@ const SubagentParams = Type.Object({
 	task: Type.Optional(Type.String({ description: "Task to delegate (for single mode)" })),
 	tasks: Type.Optional(Type.Array(TaskItem, { description: "Array of {agent, task} for parallel execution" })),
 	chain: Type.Optional(Type.Array(ChainItem, { description: "Array of {agent, task} for sequential execution" })),
+	fork: Type.Optional(Type.Boolean({ description: "Run in fork mode — child inherits parent's conversation context. Default: false", default: false })),
 	agentScope: Type.Optional(AgentScopeSchema),
 	confirmProjectAgents: Type.Optional(
 		Type.Boolean({ description: "Prompt before running project-local agents. Default: true.", default: true }),
@@ -647,6 +680,8 @@ export default function (pi: ExtensionAPI) {
 						chainUpdate,
 						makeDetails("chain"),
 						parentModel,
+						params.fork,
+						ctx.getConversation,
 					);
 					results.push(result);
 
@@ -728,6 +763,8 @@ export default function (pi: ExtensionAPI) {
 						},
 						makeDetails("parallel"),
 						parentModel,
+						params.fork,
+						ctx.getConversation,
 					);
 					allResults[index] = result;
 					emitParallelUpdate();
@@ -758,6 +795,8 @@ export default function (pi: ExtensionAPI) {
 					onUpdate,
 					makeDetails("single"),
 					parentModel,
+					params.fork,
+					ctx.getConversation,
 				);
 				const isError = result.exitCode !== 0 || result.stopReason === "error" || result.stopReason === "aborted";
 				if (isError) {

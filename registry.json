@@ -17,7 +17,8 @@
         "file-history",
         "agent-routing",
         "coordinator-mode",
-        "aery-extension"
+        "aery-extension",
+        "agent-enhancements"
       ],
       "source": "eminent337/aery-extensions/core"
     },

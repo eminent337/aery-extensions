@@ -446,6 +446,14 @@ async function runSingleAgent(
 			args.push(`Task: ${task}`);
 		}
 		let wasAborted = false;
+		let wasTimeout = false;
+
+		// Agent timeout: 5 minutes for explore, 10 minutes for others
+		const agentTimeout = agent.name === "explore" ? 5 * 60 * 1000 : 10 * 60 * 1000;
+		const timeoutId = setTimeout(() => {
+			wasTimeout = true;
+			proc.kill("SIGTERM");
+		}, agentTimeout);
 
 		const exitCode = await new Promise<number>((resolve) => {
 			const invocation = getPiInvocation(args);
@@ -526,10 +534,16 @@ async function runSingleAgent(
 			}
 		});
 
+		clearTimeout(timeoutId);
 		currentResult.exitCode = exitCode;
+		if (wasTimeout) {
+			currentResult.stopReason = "timeout";
+			currentResult.errorMessage = `Agent timed out after ${agentTimeout / 1000}s`;
+		}
 		if (wasAborted) throw new Error("Subagent was aborted");
 		return currentResult;
 	} finally {
+		clearTimeout(timeoutId);
 		if (tmpPromptPath)
 			try {
 				fs.unlinkSync(tmpPromptPath);

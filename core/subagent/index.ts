@@ -623,6 +623,7 @@ const SubagentParams = Type.Object({
 	tasks: Type.Optional(Type.Array(TaskItem, { description: "Array of {agent, task} for parallel execution" })),
 	chain: Type.Optional(Type.Array(ChainItem, { description: "Array of {agent, task} for sequential execution" })),
 	fork: Type.Optional(Type.Boolean({ description: "Run in fork mode — child inherits parent's conversation context. Default: false", default: false })),
+	background: Type.Optional(Type.Boolean({ description: "Run in background — returns immediately, notifies when complete. Default: false", default: false })),
 	agentScope: Type.Optional(AgentScopeSchema),
 	confirmProjectAgents: Type.Optional(
 		Type.Boolean({ description: "Prompt before running project-local agents. Default: true.", default: true }),
@@ -840,6 +841,69 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			if (params.agent && params.task) {
+				// Background mode: launch agent and return immediately
+				if (params.background) {
+					const agentId = `agent-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+					const outputFile = path.join(os.homedir(), ".aery", "agent", "agent-output", `${agentId}.json`);
+
+					// Ensure output directory exists
+					const outputDir = path.join(os.homedir(), ".aery", "agent", "agent-output");
+					if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
+					// Launch agent in background (don't await)
+					runSingleAgent(
+						ctx.cwd,
+						agents,
+						params.agent,
+						params.task,
+						params.cwd,
+						undefined,
+						signal,
+						undefined,
+						makeDetails("single"),
+						parentModel,
+						params.fork,
+						ctx.getConversation,
+					).then((result) => {
+						// Write result to file when complete
+						try {
+							fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
+						} catch {
+							// Best effort
+						}
+						// Notify via sendUserMessage
+						const output = getFinalOutput(result.messages);
+						const status = result.exitCode === 0 ? "completed" : "failed";
+						pi.sendUserMessage(
+							`<task-notification>\n<task-id>${agentId}</task-id>\n<status>${status}</status>\n<summary>Agent "${params.agent}" ${status}</summary>\n<result>${(output || "(no output)").slice(0, 2000)}</result>\n</task-notification>`
+						);
+					}).catch(() => {
+						// Agent failed silently
+						try {
+							fs.writeFileSync(outputFile, JSON.stringify({ error: "Agent failed" }, null, 2));
+						} catch {
+							// Best effort
+						}
+					});
+
+					return {
+						content: [{
+							type: "text",
+							text: `Launched agent "${params.agent}" in background.\nTask: ${params.task}\nAgent ID: ${agentId}\nOutput file: ${outputFile}\n\nI'll notify you when it completes. You can continue chatting while it works.`,
+						}],
+						details: makeDetails("single")([{
+							agent: params.agent,
+							agentSource: "unknown",
+							task: params.task,
+							exitCode: -1,
+							messages: [],
+							stderr: "",
+							usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, contextTokens: 0, turns: 0 },
+						}]),
+					};
+				}
+
+				// Synchronous mode: block until complete
 				const result = await runSingleAgent(
 					ctx.cwd,
 					agents,

@@ -90,6 +90,21 @@ When a worker reports failure (tests failed, build errors, file not found):
 
 **Workers can't see your conversation.** Every prompt must be self-contained with everything the worker needs. After research completes, you always do two things: (1) synthesize findings into a specific prompt, and (2) choose whether to continue that worker or spawn a fresh one.
 
+### Context Summarization
+
+When spawning fork children, summarize the parent's context for efficiency:
+- Keep the last 20 messages (recent context)
+- Summarize older messages into key points
+- Include the parent's task and what's been learned
+- This reduces token usage while preserving essential context
+
+### Agent Memory
+
+Agents remember insights from past sessions:
+- Use `agent_memory_read` to check what an agent already knows
+- Use `agent_memory_write` to save new insights
+- This prevents re-exploring the same codebase across sessions
+
 ### Always synthesize — your most important job
 
 When workers report research findings, **you must understand them before directing follow-up work**. Read the findings. Identify the approach. Then write a prompt that proves you understood by including specific file paths, line numbers, and exactly what to change.

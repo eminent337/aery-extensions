@@ -377,7 +377,7 @@ async function runSingleAgent(
 	if (effectiveModel) args.push("--model", effectiveModel);
 	if (agent.tools && agent.tools.length > 0) args.push("--tools", agent.tools.join(","));
 
-	// Fork mode: pass parent's conversation to child for prompt cache sharing
+	// Fork mode: pass parent's context to child (provider-agnostic)
 	let tmpForkDir: string | null = null;
 	let tmpForkPath: string | null = null;
 	let isFork = false;
@@ -388,7 +388,36 @@ async function runSingleAgent(
 				const tmpDir = await makeTempDir("aery-fork-");
 				tmpForkDir = tmpDir;
 				tmpForkPath = join(tmpDir, "messages.json");
-				writeFileSync(tmpForkPath, JSON.stringify(conversation, null, 2));
+
+				// Summarize conversation for efficiency (provider-agnostic)
+				// Keep last 20 messages + summarize older ones
+				const recentMessages = conversation.slice(-20);
+				const olderMessages = conversation.slice(0, -20);
+
+				let summary = "";
+				if (olderMessages.length > 0) {
+					// Extract key points from older messages
+					const keyPoints: string[] = [];
+					for (const msg of olderMessages) {
+						if (msg.role === "assistant" && Array.isArray(msg.content)) {
+							for (const part of msg.content) {
+								if (part.type === "text" && part.text) {
+									keyPoints.push(part.text.slice(0, 100));
+								}
+							}
+						}
+					}
+					summary = keyPoints.join("\n").slice(0, 1000);
+				}
+
+				// Build context for child
+				const childContext = {
+					summary,
+					recentMessages,
+					parentTask: task,
+				};
+
+				writeFileSync(tmpForkPath, JSON.stringify(childContext, null, 2));
 				args.push("--initial-messages", tmpForkPath);
 				isFork = true;
 			}

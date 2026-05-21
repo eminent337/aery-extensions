@@ -18,7 +18,8 @@
         "agent-routing",
         "coordinator-mode",
         "aery-extension",
-        "agent-enhancements"
+        "agent-enhancements",
+        "coordination-enhancements"
       ],
       "source": "eminent337/aery-extensions/core"
     },

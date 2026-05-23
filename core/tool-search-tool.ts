@@ -4,11 +4,12 @@
  */
 
 import type { ExtensionAPI } from "@eminent337/aery";
+import { registerToolAliases } from "./tool-aliases.js";
 import { Type } from "typebox";
 
-export function registerToolSearchTool(pi: ExtensionAPI): void {
-	pi.registerTool({
-		name: "tool_search",
+export function registerToolSearchTool(aery: ExtensionAPI): void {
+	aery.registerTool({
+		name: "tool_search_all",
 		description:
 			'Search for available tools by keyword or select directly. Use "select:<tool_name>" for direct selection, or keywords to search tool descriptions.',
 		promptSnippet: "search for available tools",
@@ -29,7 +30,7 @@ export function registerToolSearchTool(pi: ExtensionAPI): void {
 			),
 		}),
 		async execute(_id, params) {
-			const allTools = pi.getAllTools();
+			const allTools = aery.getAllTools();
 			const query = params.query.trim();
 			const maxResults = params.max_results ?? 5;
 
@@ -127,4 +128,5 @@ export function registerToolSearchTool(pi: ExtensionAPI): void {
 			};
 		},
 	});
+	registerToolAliases(aery, { tool_search_all: "ToolSearch" });
 }

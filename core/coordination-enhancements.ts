@@ -189,9 +189,9 @@ When combining results from multiple agents:
 
 // ─── Main Extension ──────────────────────────────────────────────────────────
 
-export default function coordinationEnhancements(pi: ExtensionAPI): void {
+export default function coordinationEnhancements(aery: ExtensionAPI): void {
 	// ─── 1. Context summarization guidance ──────────────────────────────────
-	pi.on("before_agent_start", (event) => {
+	aery.on("before_agent_start", (event) => {
 		const existingPrompt = event.systemPrompt ?? "";
 		if (!existingPrompt.includes("Task Decomposition")) {
 			return {
@@ -202,7 +202,7 @@ export default function coordinationEnhancements(pi: ExtensionAPI): void {
 	});
 
 	// ─── 2. Result synthesis guidance ──────────────────────────────────────
-	pi.on("before_agent_start", (event) => {
+	aery.on("before_agent_start", (event) => {
 		const existingPrompt = event.systemPrompt ?? "";
 		if (!existingPrompt.includes("Result Synthesis")) {
 			return {
@@ -213,7 +213,7 @@ export default function coordinationEnhancements(pi: ExtensionAPI): void {
 	});
 
 	// ─── 3. Agent memory — load on session start ──────────────────────────
-	pi.on("session_start", () => {
+	aery.on("session_start", () => {
 		// Ensure directories exist
 		if (!existsSync(MEMORY_DIR)) {
 			try { mkdirSync(MEMORY_DIR, { recursive: true }); } catch {}
@@ -224,7 +224,7 @@ export default function coordinationEnhancements(pi: ExtensionAPI): void {
 	});
 
 	// ─── 4. Agent memory — save insights from tool results ────────────────
-	pi.on("tool_result", (event) => {
+	aery.on("tool_result", (event) => {
 		const toolName = event.toolName.toLowerCase();
 
 		// Save insights from explore/plan/verify agents
@@ -249,7 +249,7 @@ export default function coordinationEnhancements(pi: ExtensionAPI): void {
 	});
 
 	// ─── Register memory tools ─────────────────────────────────────────────
-	pi.registerTool({
+	aery.registerTool({
 		name: "agent_memory_read",
 		description: "Read an agent's memory from past sessions.",
 		parameters: {
@@ -272,7 +272,7 @@ export default function coordinationEnhancements(pi: ExtensionAPI): void {
 		},
 	});
 
-	pi.registerTool({
+	aery.registerTool({
 		name: "agent_memory_write",
 		description: "Write an insight to an agent's memory.",
 		parameters: {
@@ -292,7 +292,7 @@ export default function coordinationEnhancements(pi: ExtensionAPI): void {
 	});
 
 	// ─── Register context summarization tool ───────────────────────────────
-	pi.registerTool({
+	aery.registerTool({
 		name: "context_summary",
 		description: "Get a summary of the current conversation context for passing to fork children.",
 		parameters: {

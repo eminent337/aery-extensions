@@ -125,9 +125,9 @@ function setCache(key: string, result: string): void {
 
 // ─── Main Extension ──────────────────────────────────────────────────────────
 
-export default function agentEnhancements(pi: ExtensionAPI): void {
+export default function agentEnhancements(aery: ExtensionAPI): void {
 	// ─── 1. System prompt for coordination ─────────────────────────────────
-	pi.on("before_agent_start", (event) => {
+	aery.on("before_agent_start", (event) => {
 		const existingPrompt = event.systemPrompt ?? "";
 		if (!existingPrompt.includes("Multi-Agent Coordination")) {
 			return {
@@ -141,7 +141,7 @@ export default function agentEnhancements(pi: ExtensionAPI): void {
 	let lastEditCount = 0;
 	let turnCount = 0;
 
-	pi.on("tool_result", (event) => {
+	aery.on("tool_result", (event) => {
 		const toolName = event.toolName.toLowerCase();
 		if (toolName === "edit" || toolName === "write" || toolName === "notebook_edit") {
 			lastEditCount++;
@@ -149,11 +149,11 @@ export default function agentEnhancements(pi: ExtensionAPI): void {
 		return undefined;
 	});
 
-	pi.on("turn_end", () => {
+	aery.on("turn_end", () => {
 		turnCount++;
 		// After 3+ edits in a turn, suggest verification
 		if (lastEditCount >= 3) {
-			pi.sendUserMessage(
+			aery.sendUserMessage(
 				`[Auto-Verify] You've made ${lastEditCount} file changes. Consider spawning a verify agent to test the implementation.`,
 			);
 		}
@@ -161,7 +161,7 @@ export default function agentEnhancements(pi: ExtensionAPI): void {
 	});
 
 	// ─── 3. Agent memory — load on session start ──────────────────────────
-	pi.on("session_start", () => {
+	aery.on("session_start", () => {
 		// Ensure memory directory exists
 		if (!existsSync(MEMORY_DIR)) {
 			try { mkdirSync(MEMORY_DIR, { recursive: true }); } catch {}
@@ -173,8 +173,8 @@ export default function agentEnhancements(pi: ExtensionAPI): void {
 	});
 
 	// ─── 6. Cost tracking — log on turn end ───────────────────────────────
-	pi.on("turn_end", () => {
-		const usage = pi.getContextUsage();
+	aery.on("turn_end", () => {
+		const usage = aery.getContextUsage();
 		if (usage) {
 			saveCost({
 				agent: "main",
@@ -191,7 +191,7 @@ export default function agentEnhancements(pi: ExtensionAPI): void {
 	// subagent tool's execute function.
 
 	// ─── 8. Result caching — register cache-aware explore wrapper ──────────
-	pi.on("before_agent_start", (event) => {
+	aery.on("before_agent_start", (event) => {
 		// Add cache directory info to system prompt
 		const existingPrompt = event.systemPrompt ?? "";
 		if (!existingPrompt.includes("Agent Cache")) {

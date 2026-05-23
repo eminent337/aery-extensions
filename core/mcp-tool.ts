@@ -8,11 +8,11 @@ import { Type } from "typebox";
 import type { McpClientManager, McpToolDef } from "./types.js";
 
 export function registerMcpTools(
-	pi: ExtensionAPI,
+	aery: ExtensionAPI,
 	mcpManager: McpClientManager,
 ): void {
 	// Register a meta-tool that lists available MCP tools
-	pi.registerTool({
+	aery.registerTool({
 		name: "mcp_list",
 		description:
 			"List all available MCP (Model Context Protocol) tools from connected servers.",
@@ -63,7 +63,7 @@ export function registerMcpTools(
 
 	// Register each discovered MCP tool dynamically
 	// This happens after session_start when tools are discovered
-	pi.on("session_start", async () => {
+	aery.on("session_start", async () => {
 		const tools = mcpManager.getAllTools();
 
 		for (const tool of tools) {
@@ -71,7 +71,7 @@ export function registerMcpTools(
 
 			// Skip if already registered
 			try {
-				pi.registerTool({
+				aery.registerTool({
 					name: toolName,
 					description: `[MCP:${tool.serverName}] ${tool.description}`,
 					promptSnippet: `MCP tool from ${tool.serverName}`,

@@ -48,25 +48,96 @@ function readScratchpad(key: string): string | null {
 }
 
 const COORDINATOR_SYSTEM_PROMPT = `
-You are operating in Coordinator Mode. Your role is to:
 
-1. **Research Phase**: Spawn worker agents to investigate different aspects of the problem in parallel
-2. **Synthesis Phase**: Collect and analyze worker results from the scratchpad
-3. **Implementation Phase**: Spawn workers to implement the solution based on findings
-4. **Verification Phase**: Spawn workers to verify the implementation
+## Coordinator Mode — Aery agent orchestration
 
-Guidelines:
-- Use the Agent tool to spawn workers with specific, focused tasks
-- Use the scratchpad (${SCRATCHPAD_DIR}) to share knowledge between workers
-- Each worker should write its findings to the scratchpad with a descriptive key
-- Read worker results from the scratchpad before synthesizing
-- Keep worker tasks small and focused for better results
-- Use TaskCreate to track overall progress
+You are operating as a coordinator. Your job is to direct workers to research, implement, and verify code changes while keeping your own context clean.
+
+### Core workflow
+
+1. **Research** — launch read-only agents in parallel for independent investigations.
+   - Use the Agent tool with `run_in_background: true` for open-ended research.
+   - Use `subagent_type: "explore"` for file search and source discovery.
+   - Give every worker a short `name` so you can continue it with SendMessage.
+
+2. **Synthesis** — when `<task-notification>` messages arrive, combine the findings yourself.
+   - Do not guess worker results before notifications arrive.
+   - If a worker result is incomplete, use SendMessage with focused follow-up instructions.
+
+3. **Implementation** — assign focused write tasks to one worker at a time per file set.
+   - Prompts must be self-contained: workers cannot see your conversation.
+   - Include exact files, constraints, and what another worker is handling.
+
+4. **Verification** — after non-trivial implementation, launch a verification agent.
+   - Use `subagent_type: "verification"`.
+   - Pass the original request, files changed, and the approach taken.
+   - Treat `VERDICT: FAIL` as a blocker; fix and re-verify.
+   - Treat `VERDICT: PARTIAL` as something to report honestly.
+
+5. **Conclusion** — report only after synthesis and verification are complete.
+
+### Agent tool usage
+
+- Launch parallel agents in one assistant message when tasks are independent.
+- Use background agents for research that would otherwise fill your context.
+- Use SendMessage to continue a completed worker with follow-up instructions.
+- Use background_tasks to see running/completed workers.
+- Use kill_background_task only when a worker is stuck or no longer needed.
+
+### Worker prompt rules
+
+- Fresh agents start with no context. Brief them like a colleague walking in.
+- Include: goal, relevant files, constraints, what to ignore, desired output shape.
+- Do not say "based on your findings, fix it" unless you have included the findings.
+- Workers should not spawn sub-agents unless explicitly asked.
+
+### Concurrency rules
+
+- Read-only research can run in parallel freely.
+- Edits to the same files must be serialized.
+- Verification must run after implementation, not in parallel with it.
+- If workers disagree, synthesize the disagreement and resolve with targeted follow-up.
+
+### Scratchpad
+
+Use write_scratchpad/read_scratchpad for durable coordination notes when a workflow spans many workers.
+Scratchpad location: ${SCRATCHPAD_DIR}
 `;
 
-export default function coordinatorMode(pi: ExtensionAPI): void {
+
+export default function coordinatorMode(aery: ExtensionAPI): void {
+	// ─── Coordinator Mode Command ────────────────────────────────────────
+	aery.registerCommand("coordinator", {
+		description: "Enter Aery coordinator mode for multi-agent workflows",
+		handler: async (args, ctx) => {
+			coordinatorActive = true;
+			const extra = args ? `\n\nUser goal/context: ${args}` : "";
+			aery.sendUserMessage(
+				`Coordinator mode is now active. Use Aery multi-agent orchestration: research with background agents, synthesize notifications, dispatch implementation workers, verify adversarially, then conclude.${extra}`,
+			).catch(() => {});
+			ctx.ui.notify("Coordinator mode enabled", "info");
+		},
+	});
+
+	aery.registerCommand("coordinator-off", {
+		description: "Exit coordinator mode",
+		handler: async (_args, ctx) => {
+			coordinatorActive = false;
+			ctx.ui.notify("Coordinator mode disabled", "info");
+		},
+	});
+
+	aery.on("before_agent_start", (event) => {
+		if (!coordinatorActive) return {};
+		const existingPrompt = event.systemPrompt ?? "";
+		if (existingPrompt.includes("## Coordinator Mode — Aery agent orchestration")) {
+			return {};
+		}
+		return { systemPrompt: existingPrompt + COORDINATOR_SYSTEM_PROMPT };
+	});
+
 	// ─── Spawn Worker Tool ───────────────────────────────────────────────
-	pi.registerTool({
+	aery.registerTool({
 		name: "spawn_worker",
 		description:
 			"Spawn a worker agent for a specific task. Workers run autonomously and write results to the scratchpad.",
@@ -106,7 +177,7 @@ Write your findings to the scratchpad at: ${SCRATCHPAD_DIR}/${params.scratchpad_
 
 After completing your task, report what you found.`;
 
-			pi.sendUserMessage(workerPrompt);
+			aery.sendUserMessage(workerPrompt).catch(() => {});
 
 			return {
 				content: [
@@ -120,7 +191,7 @@ After completing your task, report what you found.`;
 	});
 
 	// ─── Read Scratchpad Tool ────────────────────────────────────────────
-	pi.registerTool({
+	aery.registerTool({
 		name: "read_scratchpad",
 		description: "Read a worker's results from the scratchpad.",
 		parameters: Type.Object({
@@ -154,7 +225,7 @@ After completing your task, report what you found.`;
 	});
 
 	// ─── Write Scratchpad Tool ───────────────────────────────────────────
-	pi.registerTool({
+	aery.registerTool({
 		name: "write_scratchpad",
 		description: "Write content to the scratchpad for cross-worker knowledge sharing.",
 		parameters: Type.Object({
@@ -180,7 +251,7 @@ After completing your task, report what you found.`;
 	});
 
 	// ─── List Workers Tool ───────────────────────────────────────────────
-	pi.registerTool({
+	aery.registerTool({
 		name: "list_workers",
 		description: "List all active workers and their status.",
 		parameters: Type.Object({}),
@@ -213,7 +284,7 @@ After completing your task, report what you found.`;
 	});
 
 	// ─── Mark Worker Done ────────────────────────────────────────────────
-	pi.registerTool({
+	aery.registerTool({
 		name: "complete_worker",
 		description: "Mark a worker as completed.",
 		parameters: Type.Object({
@@ -257,7 +328,7 @@ After completing your task, report what you found.`;
 	});
 
 	// ─── Cleanup on shutdown ─────────────────────────────────────────────
-	pi.on("session_shutdown", () => {
+	aery.on("session_shutdown", () => {
 		workers.clear();
 		coordinatorActive = false;
 	});

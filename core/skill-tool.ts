@@ -3,12 +3,45 @@
  * Supports model override, fork execution, and effort level settings.
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI, ToolDefinition } from "@eminent337/aery";
 import { Type } from "typebox";
 
-export function registerSkillTool(pi: ExtensionAPI): void {
-	pi.registerTool({
-		name: "skill",
+const SkillParams = Type.Object({
+	name: Type.Optional(Type.String({
+		description: "The skill name (Aery-native)",
+	})),
+	skill: Type.Optional(Type.String({
+		description: "The skill name (Aery Agent compatible)",
+	})),
+	args: Type.Optional(
+		Type.String({
+			description: "Arguments to pass to the skill",
+		}),
+	),
+	model: Type.Optional(
+		Type.String({
+			description:
+				"Override the model for this skill execution (e.g., 'opus', 'haiku', 'sonnet')",
+		}),
+	),
+	effort: Type.Optional(
+		Type.Union(
+			[
+				Type.Literal("low"),
+				Type.Literal("medium"),
+				Type.Literal("high"),
+			],
+			{
+				description:
+					"Effort level for the skill execution",
+			},
+		),
+	),
+});
+
+export function registerSkillTool(aery: ExtensionAPI): void {
+	const skillTool: ToolDefinition<typeof SkillParams> = {
+		name: "Skill",
 		description:
 			"Execute a skill (slash command) programmatically. Skills are reusable prompt templates that can override models, restrict tools, and set effort levels.",
 		promptSnippet: "invoke a skill or slash command",
@@ -18,42 +51,21 @@ export function registerSkillTool(pi: ExtensionAPI): void {
 			"Use context:'fork' to run in an isolated sub-agent with its own token budget",
 			"Check available skills with the tool_search or by looking at registered commands",
 		],
-		parameters: Type.Object({
-			name: Type.String({
-				description:
-					"The skill name (e.g., 'commit', 'review', 'test')",
-			}),
-			args: Type.Optional(
-				Type.String({
-					description: "Arguments to pass to the skill",
-				}),
-			),
-			model: Type.Optional(
-				Type.String({
-					description:
-						"Override the model for this skill execution (e.g., 'opus', 'haiku', 'sonnet')",
-				}),
-			),
-			effort: Type.Optional(
-				Type.Union(
-					[
-						Type.Literal("low"),
-						Type.Literal("medium"),
-						Type.Literal("high"),
-					],
-					{
-						description:
-							"Effort level for the skill execution",
-					},
-				),
-			),
-		}),
+		parameters: SkillParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
+			const skillName = params.skill ?? params.name;
+			if (!skillName) {
+				return {
+					content: [{ type: "text" as const, text: "Skill name is required. Use `skill` or `name`." }],
+					isError: true,
+				};
+			}
+
 			// Get available commands
-			const commands = pi.getCommands();
+			const commands = aery.getCommands();
 			const cmd = commands.find(
 				(c) =>
-					c.name.toLowerCase() === params.name.toLowerCase(),
+					c.name.toLowerCase() === skillName.toLowerCase(),
 			);
 
 			if (!cmd) {
@@ -65,7 +77,7 @@ export function registerSkillTool(pi: ExtensionAPI): void {
 					content: [
 						{
 							type: "text" as const,
-							text: `Skill not found: ${params.name}\nAvailable skills: ${available}`,
+							text: `Skill not found: ${skillName}\nAvailable skills: ${available}`,
 						},
 					],
 					isError: true,
@@ -74,7 +86,7 @@ export function registerSkillTool(pi: ExtensionAPI): void {
 
 			// Set model if override requested
 			if (params.model) {
-				const success = await pi.setModel(params.model);
+				const success = await aery.setModel(params.model);
 				if (!success) {
 					return {
 						content: [
@@ -95,12 +107,12 @@ export function registerSkillTool(pi: ExtensionAPI): void {
 					medium: "medium" as const,
 					high: "high" as const,
 				};
-				pi.setThinkingLevel(levelMap[params.effort]);
+				aery.setThinkingLevel(levelMap[params.effort]);
 			}
 
 			// Send the skill as a user message
-			const skillPrompt = `/${params.name}${params.args ? ` ${params.args}` : ""}`;
-			pi.sendUserMessage(skillPrompt);
+			const skillPrompt = `/${skillName}${params.args ? ` ${params.args}` : ""}`;
+			aery.sendUserMessage(skillPrompt);
 
 			return {
 				content: [
@@ -110,12 +122,15 @@ export function registerSkillTool(pi: ExtensionAPI): void {
 					},
 				],
 				details: {
-					skill: params.name,
+					skill: skillName,
 					args: params.args,
 					model: params.model,
 					effort: params.effort,
 				},
 			};
 		},
-	});
+	};
+
+	aery.registerTool(skillTool);
+	aery.registerTool({ ...skillTool, name: "skill", label: "skill" });
 }

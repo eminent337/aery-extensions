@@ -4,6 +4,7 @@
  */
 
 import type { ExtensionAPI } from "@eminent337/aery";
+import { registerToolAliases } from "./tool-aliases.js";
 import { Type } from "typebox";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -52,9 +53,9 @@ function findTask(tasks: Task[], id: string): Task | undefined {
 	return tasks.find((t) => t.id === id && t.status !== "deleted");
 }
 
-export function registerTaskTools(pi: ExtensionAPI): void {
+export function registerTaskTools(aery: ExtensionAPI): void {
 	// ─── TaskCreate ──────────────────────────────────────────────────────
-	pi.registerTool({
+	aery.registerTool({
 		name: "task_create",
 		description: "Create a new task with subject, description, and optional dependencies.",
 		promptSnippet: "create a task in the task list",
@@ -144,7 +145,7 @@ export function registerTaskTools(pi: ExtensionAPI): void {
 	});
 
 	// ─── TaskGet ─────────────────────────────────────────────────────────
-	pi.registerTool({
+	aery.registerTool({
 		name: "task_get",
 		description: "Retrieve a task by its ID.",
 		parameters: Type.Object({
@@ -194,7 +195,7 @@ export function registerTaskTools(pi: ExtensionAPI): void {
 	});
 
 	// ─── TaskList ────────────────────────────────────────────────────────
-	pi.registerTool({
+	aery.registerTool({
 		name: "task_list",
 		description:
 			"List all tasks. Filter by status, owner, or blocking info.",
@@ -269,7 +270,7 @@ export function registerTaskTools(pi: ExtensionAPI): void {
 	});
 
 	// ─── TaskUpdate ──────────────────────────────────────────────────────
-	pi.registerTool({
+	aery.registerTool({
 		name: "task_update",
 		description:
 			"Update a task's status, owner, subject, description, or dependencies.",
@@ -366,7 +367,7 @@ export function registerTaskTools(pi: ExtensionAPI): void {
 	});
 
 	// ─── TaskStop ────────────────────────────────────────────────────────
-	pi.registerTool({
+	aery.registerTool({
 		name: "task_stop",
 		description: "Stop a running background task.",
 		parameters: Type.Object({
@@ -414,5 +415,13 @@ export function registerTaskTools(pi: ExtensionAPI): void {
 				],
 			};
 		},
+	});
+
+	// ─── Aery Agent-compatible aliases ───────────────────────────────────
+	registerToolAliases(aery, {
+		task_create: "TaskCreate",
+		task_get: "TaskGet",
+		task_list: "TaskList",
+		task_update: "TaskUpdate",
 	});
 }

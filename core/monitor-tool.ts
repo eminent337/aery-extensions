@@ -10,10 +10,10 @@ import { Type } from "typebox";
 
 const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
-export function registerMonitorTool(pi: ExtensionAPI): void {
+export function registerMonitorTool(aery: ExtensionAPI): void {
 	const running = new Map<string, ChildProcess>();
 
-	pi.registerTool({
+	aery.registerTool({
 		name: "monitor",
 		description:
 			"Run a shell command in the background and stream its stdout line-by-line as notifications. Use for watching builds, servers, log tails, or any long-running process.",
@@ -127,7 +127,7 @@ export function registerMonitorTool(pi: ExtensionAPI): void {
 	});
 
 	// Cleanup on shutdown
-	pi.on("session_shutdown", () => {
+	aery.on("session_shutdown", () => {
 		for (const [id, child] of running) {
 			try {
 				child.kill("SIGTERM");

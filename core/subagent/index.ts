@@ -12,17 +12,19 @@
  * Uses JSON mode to capture structured output from subagents.
  */
 
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { type ExtensionAPI, getMarkdownTheme, withFileMutationQueue } from "@eminent337/aery";
+import { type ExtensionAPI, type ToolDefinition, getMarkdownTheme, withFileMutationQueue } from "@eminent337/aery";
 import type { Message } from "@eminent337/aery-ai";
 import { StringEnum } from "@eminent337/aery-ai";
 import type { AgentToolResult } from "@eminent337/aery-core";
 import { Container, Markdown, Spacer, Text } from "@eminent337/aery/tui";
 import { Type } from "typebox";
 import { type AgentConfig, type AgentScope, discoverAgents, loadAgentMemory } from "./agents.js";
+import { registerBackgroundTask, completeBackgroundTask, registerBackgroundTaskTools } from "./background-tasks.js";
+import { registerSendMessageTool } from "./send-message.js";
 
 const MAX_PARALLEL_TASKS = 8;
 const MAX_CONCURRENCY = 4;
@@ -355,6 +357,7 @@ async function runSingleAgent(
 	parentModel?: string,
 	fork: boolean = false,
 	getConversation?: () => Message[],
+	onProcess?: (proc: ChildProcess) => void,
 ): Promise<SingleResult> {
 	const agent = agents.find((a) => a.name === agentName);
 
@@ -491,6 +494,7 @@ async function runSingleAgent(
 				shell: false,
 				stdio: ["ignore", "pipe", "pipe"],
 			});
+			onProcess?.(proc);
 			let buffer = "";
 
 			const processLine = (line: string) => {
@@ -618,6 +622,14 @@ const AgentScopeSchema = StringEnum(["user", "project", "both"] as const, {
 });
 
 const SubagentParams = Type.Object({
+	// Aery Agent tool single-agent shape
+	description: Type.Optional(Type.String({ description: "Short 3-5 word summary of what the agent will do" })),
+	prompt: Type.Optional(Type.String({ description: "Task prompt for the agent (alias for task)" })),
+	subagent_type: Type.Optional(Type.String({ description: "Agent type to invoke (alias for agent)" })),
+	run_in_background: Type.Optional(Type.Boolean({ description: "Run in background and notify when complete (alias for background)", default: false })),
+	name: Type.Optional(Type.String({ description: "Addressable instance name for SendMessage" })),
+
+	// Aery-native shape
 	agent: Type.Optional(Type.String({ description: "Name of the agent to invoke (for single mode)" })),
 	task: Type.Optional(Type.String({ description: "Task to delegate (for single mode)" })),
 	tasks: Type.Optional(Type.Array(TaskItem, { description: "Array of {agent, task} for parallel execution" })),
@@ -631,19 +643,32 @@ const SubagentParams = Type.Object({
 	cwd: Type.Optional(Type.String({ description: "Working directory for the agent process (single mode)" })),
 });
 
-export default function (pi: ExtensionAPI) {
-	pi.registerTool({
-		name: "subagent",
-		label: "Subagent",
+export default function (aery: ExtensionAPI) {
+	registerBackgroundTaskTools(aery);
+	registerSendMessageTool(aery);
+
+	const agentTool: ToolDefinition<typeof SubagentParams, SubagentDetails> = {
+		name: "Agent",
+		label: "Agent",
 		description: [
-			"Delegate tasks to specialized subagents with isolated context.",
-			"Modes: single (agent + task), parallel (tasks array), chain (sequential with {previous} placeholder).",
-			'Default agent scope is "user" (from ~/.aery/agent/agents).',
-			'To enable project-local agents in .aery/agents, set agentScope: "both" (or "project").',
+			"Launch an Aery agent for research, implementation, verification, or background work.",
+			"Aery Agent shape: { description, prompt, subagent_type, run_in_background, name }.",
+			"Aery shape: { agent, task, tasks, chain }.",
+			'Built-in agents: general, explore, plan, verification, worker, coordinator.',
+			'Use run_in_background for long research; notifications arrive as <task-notification> user messages.',
 		].join(" "),
 		parameters: SubagentParams,
 
 		async execute(_toolCallId, params, signal, onUpdate, ctx) {
+			// Normalize Aery Agent params into the native shape.
+			if (params.subagent_type && !params.agent) params.agent = params.subagent_type;
+			if (params.prompt && !params.task) params.task = params.prompt;
+			if (params.task && !params.agent) {
+				params.agent = "general";
+				params.fork = true;
+			}
+			if (params.run_in_background !== undefined && params.background === undefined) params.background = params.run_in_background;
+
 			const agentScope: AgentScope = params.agentScope ?? "both";
 			const discovery = discoverAgents(ctx.cwd, agentScope);
 			const agents = discovery.agents;
@@ -841,14 +866,22 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			if (params.agent && params.task) {
+				const selectedAgent = agents.find((agent) => agent.name === params.agent);
+				const agentInstanceName = params.name ?? params.agent;
+				const shouldRunInBackground = Boolean(params.background || selectedAgent?.background);
+
 				// Background mode: launch agent and return immediately
-				if (params.background) {
+				if (shouldRunInBackground) {
 					const agentId = `agent-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 					const outputFile = path.join(os.homedir(), ".aery", "agent", "agent-output", `${agentId}.json`);
 
 					// Ensure output directory exists
 					const outputDir = path.join(os.homedir(), ".aery", "agent", "agent-output");
 					if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
+					// Register with background task manager. The process handle is attached
+					// once runSingleAgent spawns the child process.
+					registerBackgroundTask(agentId, agentInstanceName, params.task, undefined, outputFile);
 
 					// Launch agent in background (don't await)
 					runSingleAgent(
@@ -858,12 +891,12 @@ export default function (pi: ExtensionAPI) {
 						params.task,
 						params.cwd,
 						undefined,
-						signal,
 						undefined,
 						makeDetails("single"),
 						parentModel,
 						params.fork,
 						ctx.getConversation,
+						(proc) => registerBackgroundTask(agentId, agentInstanceName, params.task, proc, outputFile),
 					).then((result) => {
 						// Write result to file when complete
 						try {
@@ -871,14 +904,29 @@ export default function (pi: ExtensionAPI) {
 						} catch {
 							// Best effort
 						}
+						// Update background task manager
+						completeBackgroundTask(agentId, {
+							output: getFinalOutput(result.messages),
+							exitCode: result.exitCode,
+							usage: result.usage,
+							model: result.model,
+						});
 						// Notify via sendUserMessage
 						const output = getFinalOutput(result.messages);
 						const status = result.exitCode === 0 ? "completed" : "failed";
-						pi.sendUserMessage(
-							`<task-notification>\n<task-id>${agentId}</task-id>\n<status>${status}</status>\n<summary>Agent "${params.agent}" ${status}</summary>\n<result>${(output || "(no output)").slice(0, 2000)}</result>\n</task-notification>`
-						);
+						const usageStr = result.usage.turns > 0
+							? `\nUsage: ${result.usage.turns} turns, ↑${result.usage.input} ↓${result.usage.output} tokens, $${result.usage.cost.toFixed(4)}`
+							: "";
+						aery.sendUserMessage(
+							`<task-notification>\n<task-id>${agentId}</task-id>\n<status>${status}</status>\n<summary>Agent "${agentInstanceName}" (${params.agent}) ${status}</summary>\n<result>${(output || "(no output)").slice(0, 2000)}</result>${usageStr}\n</task-notification>`
+						).catch(() => {});
 					}).catch(() => {
 						// Agent failed silently
+						completeBackgroundTask(agentId, {
+							output: "(agent process failed)",
+							exitCode: 1,
+							usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, turns: 0 },
+						});
 						try {
 							fs.writeFileSync(outputFile, JSON.stringify({ error: "Agent failed" }, null, 2));
 						} catch {
@@ -1255,5 +1303,8 @@ export default function (pi: ExtensionAPI) {
 			const text = result.content[0];
 			return new Text(text?.type === "text" ? text.text : "(no output)", 0, 0);
 		},
-	});
+	};
+
+	aery.registerTool(agentTool);
+	aery.registerTool({ ...agentTool, name: "subagent", label: "Subagent" });
 }

@@ -3,14 +3,15 @@
  */
 
 import type { ExtensionAPI } from "@eminent337/aery";
+import { registerToolAliases } from "./tool-aliases.js";
 import { Type } from "typebox";
 import type { CronScheduler } from "./cron-scheduler.js";
 
 export function registerCronDeleteTool(
-	pi: ExtensionAPI,
+	aery: ExtensionAPI,
 	scheduler: CronScheduler,
 ): void {
-	pi.registerTool({
+	aery.registerTool({
 		name: "cron_delete",
 		description: "Remove a scheduled cron job by its ID.",
 		parameters: Type.Object({
@@ -41,4 +42,5 @@ export function registerCronDeleteTool(
 			};
 		},
 	});
+	registerToolAliases(aery, { cron_delete: "CronDelete" });
 }

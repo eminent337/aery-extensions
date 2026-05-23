@@ -75,14 +75,14 @@ function runCheck(
 	}
 }
 
-export default function autoFix(pi: ExtensionAPI): void {
+export default function autoFix(aery: ExtensionAPI): void {
 	const config = loadConfig();
 	if (!config.enabled) return;
 
 	const toolSet = new Set(config.tools.map((t) => t.toLowerCase()));
 	let retryCount = 0;
 
-	pi.on("tool_result", (event) => {
+	aery.on("tool_result", (event) => {
 		const toolName = event.toolName.toLowerCase();
 		if (!toolSet.has(toolName)) return undefined;
 		if (event.isError) return undefined;
@@ -138,7 +138,7 @@ export default function autoFix(pi: ExtensionAPI): void {
 	});
 
 	// Reset retry count on new turn
-	pi.on("turn_start", () => {
+	aery.on("turn_start", () => {
 		retryCount = 0;
 	});
 }

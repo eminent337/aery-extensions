@@ -6,15 +6,16 @@
 import { readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import type { ExtensionAPI } from "@eminent337/aery";
+import { registerToolAliases } from "./tool-aliases.js";
 import { Type } from "typebox";
 import type { NotebookContent, NotebookCell } from "./types.js";
 
 // Track read timestamps for read-before-write guard
 const readTimestamps = new Map<string, number>();
 
-export function registerNotebookEditTool(pi: ExtensionAPI): void {
+export function registerNotebookEditTool(aery: ExtensionAPI): void {
 	// Track when notebooks are read
-	pi.on("tool_result", (event) => {
+	aery.on("tool_result", (event) => {
 		if (
 			event.toolName === "read" ||
 			event.toolName === "FileReadTool"
@@ -35,7 +36,7 @@ export function registerNotebookEditTool(pi: ExtensionAPI): void {
 		}
 	});
 
-	pi.registerTool({
+	aery.registerTool({
 		name: "notebook_edit",
 		description:
 			"Edit Jupyter notebook (.ipynb) cells. Supports replace, insert, and delete operations.",
@@ -310,4 +311,5 @@ export function registerNotebookEditTool(pi: ExtensionAPI): void {
 			};
 		},
 	});
+	registerToolAliases(aery, { notebook_edit: "NotebookEdit" });
 }

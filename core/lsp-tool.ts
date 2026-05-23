@@ -178,10 +178,10 @@ async function execGitCheckIgnore(
 }
 
 export function registerLspTool(
-	pi: ExtensionAPI,
+	aery: ExtensionAPI,
 	lspManager: LspManager,
 ): void {
-	pi.registerTool({
+	aery.registerTool({
 		name: "lsp",
 		description:
 			"Language Server Protocol operations for code intelligence. Operations: goToDefinition, findReferences, hover, documentSymbol, workspaceSymbol, goToImplementation, prepareCallHierarchy, incomingCalls, outgoingCalls.",

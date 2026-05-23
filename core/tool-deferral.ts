@@ -63,14 +63,14 @@ function loadConfig(): DeferralConfig {
 	}
 }
 
-export default function toolDeferral(pi: ExtensionAPI): void {
+export default function toolDeferral(aery: ExtensionAPI): void {
 	const config = loadConfig();
 	const deferredSet = new Set(config.deferred.map((n) => n.toLowerCase()));
 	const deferredTools = new Map<string, { name: string; description: string }>();
 
 	// On session start, deactivate deferred tools
-	pi.on("session_start", () => {
-		const allTools = pi.getAllTools();
+	aery.on("session_start", () => {
+		const allTools = aery.getAllTools();
 		const activeNames: string[] = [];
 
 		for (const tool of allTools) {
@@ -87,12 +87,12 @@ export default function toolDeferral(pi: ExtensionAPI): void {
 
 		// Only set active tools if we actually deferred something
 		if (deferredTools.size > 0) {
-			pi.setActiveTools(activeNames);
+			aery.setActiveTools(activeNames);
 		}
 	});
 
 	// Register tool_search for discovering deferred tools
-	pi.registerTool({
+	aery.registerTool({
 		name: "tool_search",
 		description:
 			'Search for deferred tools by keyword. Use "select:<tool_name>" to activate a specific tool, or keywords to search descriptions.',
@@ -124,8 +124,8 @@ export default function toolDeferral(pi: ExtensionAPI): void {
 
 				if (tool) {
 					// Activate the tool
-					const currentActive = pi.getActiveTools();
-					pi.setActiveTools([...currentActive, tool.name]);
+					const currentActive = aery.getActiveTools();
+					aery.setActiveTools([...currentActive, tool.name]);
 					deferredTools.delete(toolName);
 
 					return {

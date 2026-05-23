@@ -137,13 +137,13 @@ export default function (aery: ExtensionAPI) {
 			});
 
 			return {
-				content: [{ type: "text", text: `Team "${params.name}" created with ${params.tasks.length} tasks. Use TaskList to see available work.` }],
+				content: [{ type: "text", text: `Team "${params.name}" created with ${params.tasks.length} tasks. Use TeamTaskList to see available work.` }],
 			};
 		},
 	});
 
 	aery.registerTool({
-		name: "TaskList",
+		name: "TeamTaskList",
 		description: "List tasks in a team. Shows pending, in_progress, and completed tasks.",
 		parameters: Type.Object({
 			teamName: Type.String({ description: "Team name" }),
@@ -184,7 +184,7 @@ export default function (aery: ExtensionAPI) {
 	});
 
 	aery.registerTool({
-		name: "TaskClaim",
+		name: "TeamTaskClaim",
 		description: "Claim a task and mark it in_progress.",
 		parameters: Type.Object({
 			teamName: Type.String(),
@@ -204,7 +204,7 @@ export default function (aery: ExtensionAPI) {
 	});
 
 	aery.registerTool({
-		name: "TaskComplete",
+		name: "TeamTaskComplete",
 		description: "Mark a task as completed.",
 		parameters: Type.Object({
 			teamName: Type.String(),

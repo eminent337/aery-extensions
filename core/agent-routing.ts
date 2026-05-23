@@ -59,7 +59,7 @@ function normalizeAgentName(name: string): string {
 		.trim();
 }
 
-export default function agentRouting(pi: ExtensionAPI): void {
+export default function agentRouting(aery: ExtensionAPI): void {
 	const config = loadConfig();
 	if (Object.keys(config.routing).length === 0) return;
 
@@ -73,7 +73,7 @@ export default function agentRouting(pi: ExtensionAPI): void {
 	let currentAgent: string | null = null;
 
 	// Intercept agent start to set model
-	pi.on("before_agent_start", (event) => {
+	aery.on("before_agent_start", (event) => {
 		// Try to detect agent type from system prompt or context
 		const systemPrompt = event.systemPrompt ?? "";
 
@@ -88,7 +88,7 @@ export default function agentRouting(pi: ExtensionAPI): void {
 				const modelConfig = config.models?.[targetModel];
 				const modelName = modelConfig?.model ?? targetModel;
 
-				pi.setModel(modelName);
+				aery.setModel(modelName);
 				return { systemPrompt: event.systemPrompt };
 			}
 		}
@@ -98,14 +98,14 @@ export default function agentRouting(pi: ExtensionAPI): void {
 		if (defaultModel && !currentAgent) {
 			const modelConfig = config.models?.[defaultModel];
 			const modelName = modelConfig?.model ?? defaultModel;
-			pi.setModel(modelName);
+			aery.setModel(modelName);
 		}
 
 		return { systemPrompt: event.systemPrompt };
 	});
 
 	// Reset on turn end
-	pi.on("turn_end", () => {
+	aery.on("turn_end", () => {
 		currentAgent = null;
 	});
 

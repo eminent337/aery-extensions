@@ -5,6 +5,7 @@
  */
 
 import type { ExtensionAPI } from "@eminent337/aery";
+import { registerToolAliases } from "./tool-aliases.js";
 import { Type } from "typebox";
 
 const MAX_BYTES = 50_000;
@@ -107,4 +108,5 @@ export default function (aery: ExtensionAPI) {
 			};
 		},
 	});
+	registerToolAliases(aery, { web_fetch: "WebFetch" });
 }

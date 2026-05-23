@@ -3,14 +3,15 @@
  */
 
 import type { ExtensionAPI } from "@eminent337/aery";
+import { registerToolAliases } from "./tool-aliases.js";
 import { Type } from "typebox";
 import { cronToHuman, type CronScheduler } from "./cron-scheduler.js";
 
 export function registerCronListTool(
-	pi: ExtensionAPI,
+	aery: ExtensionAPI,
 	scheduler: CronScheduler,
 ): void {
-	pi.registerTool({
+	aery.registerTool({
 		name: "cron_list",
 		description: "List all scheduled cron jobs.",
 		parameters: Type.Object({}),
@@ -49,4 +50,5 @@ export function registerCronListTool(
 			};
 		},
 	});
+	registerToolAliases(aery, { cron_list: "CronList" });
 }

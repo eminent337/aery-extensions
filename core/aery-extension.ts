@@ -10,6 +10,9 @@
  * - Ask User Question: Interactive multiple-choice questions
  * - Tool Search: Discover tools by keyword
  * - Task v2: Task management with dependencies
+ * - Agent Teams: TeamCreate, team task queue, inbox messaging
+ * - Memory Behaviors: User/project/team memory guidance and SaveMemory
+ * - Workflow Behaviors: Continuous work, background agents, planning, verification
  * - MCP Resources: List/read MCP server resources
  */
 
@@ -29,49 +32,65 @@ import { registerSkillTool } from "./skill-tool.js";
 import { registerAskUserQuestionTool } from "./ask-user-question-tool.js";
 import { registerToolSearchTool } from "./tool-search-tool.js";
 import { registerTaskTools } from "./task-v2.js";
+import agentTeams from "./agent-teams.js";
+import memoryBehaviors from "./memory-behaviors.js";
+import workflowBehaviors from "./workflow-behaviors.js";
+import planModeTools from "./plan-mode-tools.js";
 import { registerMcpResourceTools } from "./mcp-resources.js";
 
-export default function aeryExtension(pi: ExtensionAPI): void {
+export default function aeryExtension(aery: ExtensionAPI): void {
 	// ─── LSP (Language Server Protocol) ──────────────────────────────────
 	const lspManager = createLspManager();
-	registerLspTool(pi, lspManager);
+	registerLspTool(aery, lspManager);
 
 	// ─── MCP (Model Context Protocol) ───────────────────────────────────
 	const mcpConfigs = loadMcpConfig();
 	const mcpManager = createMcpClientManager(mcpConfigs);
-	registerMcpTools(pi, mcpManager);
+	registerMcpTools(aery, mcpManager);
 
 	// ─── Monitor ─────────────────────────────────────────────────────────
-	registerMonitorTool(pi);
+	registerMonitorTool(aery);
 
 	// ─── Notebook ────────────────────────────────────────────────────────
-	registerNotebookEditTool(pi);
+	registerNotebookEditTool(aery);
 
 	// ─── Skill ───────────────────────────────────────────────────────────
-	registerSkillTool(pi);
+	registerSkillTool(aery);
 
 	// ─── Ask User Question ───────────────────────────────────────────────
-	registerAskUserQuestionTool(pi);
+	registerAskUserQuestionTool(aery);
 
 	// ─── Tool Search ─────────────────────────────────────────────────────
-	registerToolSearchTool(pi);
+	registerToolSearchTool(aery);
 
 	// ─── Task v2 ─────────────────────────────────────────────────────────
-	registerTaskTools(pi);
+	registerTaskTools(aery);
+
+	// ─── Agent Teams ─────────────────────────────────────────────────────
+	agentTeams(aery);
+
+	// ─── Memory Behaviors ───────────────────────────────────────────────
+	memoryBehaviors(aery);
+
+	// ─── Workflow Behaviors ──────────────────────────────────────────────
+	workflowBehaviors(aery);
+
+	// ─── Plan Mode ────────────────────────────────────────────────────────
+	planModeTools(aery);
 
 	// ─── MCP Resources ───────────────────────────────────────────────────
-	registerMcpResourceTools(pi, mcpManager);
+	registerMcpResourceTools(aery, mcpManager);
 
 	// ─── Cron Scheduler ──────────────────────────────────────────────────
 	const cronScheduler = createCronScheduler((msg) =>
-		pi.sendUserMessage(msg),
+		aery.sendUserMessage(msg),
 	);
-	registerCronCreateTool(pi, cronScheduler);
-	registerCronDeleteTool(pi, cronScheduler);
-	registerCronListTool(pi, cronScheduler);
+	registerCronCreateTool(aery, cronScheduler);
+	registerCronDeleteTool(aery, cronScheduler);
+	registerCronListTool(aery, cronScheduler);
 
 	// ─── Lifecycle ───────────────────────────────────────────────────────
-	pi.on("session_start", async () => {
+	aery.on("session_start", async () => {
 		lspManager.initialize();
 		cronScheduler.start();
 
@@ -79,7 +98,7 @@ export default function aeryExtension(pi: ExtensionAPI): void {
 		mcpManager.connectAll().catch(() => {});
 	});
 
-	pi.on("session_shutdown", () => {
+	aery.on("session_shutdown", () => {
 		lspManager.shutdown();
 		mcpManager.disconnectAll();
 		cronScheduler.stop();

@@ -81,9 +81,9 @@ function backupFile(filePath: string): FileSnapshot | null {
 	}
 }
 
-export default function fileHistory(pi: ExtensionAPI): void {
+export default function fileHistory(aery: ExtensionAPI): void {
 	// Capture session ID
-	pi.on("session_start", (event) => {
+	aery.on("session_start", (event) => {
 		// Generate a simple session ID from timestamp
 		sessionId = `session-${Date.now()}`;
 		fileVersions.clear();
@@ -91,7 +91,7 @@ export default function fileHistory(pi: ExtensionAPI): void {
 	});
 
 	// Track files modified by edit/write tools
-	pi.on("tool_call", (event) => {
+	aery.on("tool_call", (event) => {
 		const toolName = event.toolName.toLowerCase();
 		const input = event.input as any;
 
@@ -104,7 +104,7 @@ export default function fileHistory(pi: ExtensionAPI): void {
 	});
 
 	// Create snapshot at turn end
-	pi.on("turn_end", (event) => {
+	aery.on("turn_end", (event) => {
 		const files: FileSnapshot[] = [];
 		for (const [path, version] of fileVersions) {
 			files.push({
@@ -126,7 +126,7 @@ export default function fileHistory(pi: ExtensionAPI): void {
 	});
 
 	// Register rewind tool
-	pi.registerTool({
+	aery.registerTool({
 		name: "file_history_rewind",
 		description:
 			"Rewind files to a previous snapshot. Restores all files that were modified since that point.",
@@ -198,7 +198,7 @@ export default function fileHistory(pi: ExtensionAPI): void {
 	});
 
 	// Register history list tool
-	pi.registerTool({
+	aery.registerTool({
 		name: "file_history_list",
 		description: "List all file history snapshots.",
 		parameters: Type.Object({}),

@@ -7,11 +7,11 @@ import { Type } from "typebox";
 import type { McpClientManager } from "./types.js";
 
 export function registerMcpResourceTools(
-	pi: ExtensionAPI,
+	aery: ExtensionAPI,
 	mcpManager: McpClientManager,
 ): void {
 	// ─── ListMcpResources ────────────────────────────────────────────────
-	pi.registerTool({
+	aery.registerTool({
 		name: "mcp_list_resources",
 		description:
 			"List available resources from connected MCP servers.",
@@ -55,7 +55,7 @@ export function registerMcpResourceTools(
 	});
 
 	// ─── ReadMcpResource ─────────────────────────────────────────────────
-	pi.registerTool({
+	aery.registerTool({
 		name: "mcp_read_resource",
 		description:
 			"Read a specific resource from an MCP server by server name and URI.",

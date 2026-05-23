@@ -13,6 +13,8 @@ export interface AgentConfig {
 	description: string;
 	tools?: string[];
 	model?: string;
+	background?: boolean;
+	verdict?: boolean;
 	systemPrompt: string;
 	source: "user" | "project";
 	filePath: string;
@@ -65,6 +67,8 @@ function loadAgentsFromDir(dir: string, source: "user" | "project"): AgentConfig
 			description: frontmatter.description,
 			tools: tools && tools.length > 0 ? tools : undefined,
 			model: frontmatter.model,
+			background: frontmatter.background === "true",
+			verdict: frontmatter.verdict === "true",
 			systemPrompt: body,
 			source,
 			filePath,
@@ -114,7 +118,8 @@ export function discoverAgents(cwd: string, scope: AgentScope): AgentDiscoveryRe
 	// Also load bundled agents shipped with this extension
 	const bundledDir = path.join(path.dirname(new URL(import.meta.url).pathname), "agents");
 
-	const bundledAgents = loadAgentsFromDir(bundledDir, "user");
+	let bundledAgents = loadAgentsFromDir(bundledDir, "user");
+	bundledAgents = bundledAgents.map((agent) => ({ ...agent, source: "user" as const }));
 	const userAgents = scope === "project" ? [] : loadAgentsFromDir(userDir, "user");
 	const projectAgents = scope === "user" || !projectAgentsDir ? [] : loadAgentsFromDir(projectAgentsDir, "project");
 

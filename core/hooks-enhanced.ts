@@ -236,12 +236,12 @@ async function runHttpHook(hook: HookEntry, env: Record<string, string>): Promis
 	}
 }
 
-export default function hooksEnhanced(pi: ExtensionAPI): void {
+export default function hooksEnhanced(aery: ExtensionAPI): void {
 	const hooks = loadHooks();
 
 	// ─── PreToolUse ──────────────────────────────────────────────────────
 	if (hooks.PreToolUse?.length) {
-		pi.on("tool_call", (event) => {
+		aery.on("tool_call", (event) => {
 			const toolName = event.toolName;
 			const input = event.input;
 
@@ -276,7 +276,7 @@ export default function hooksEnhanced(pi: ExtensionAPI): void {
 
 	// ─── PostToolUse ─────────────────────────────────────────────────────
 	if (hooks.PostToolUse?.length) {
-		pi.on("tool_result", (event) => {
+		aery.on("tool_result", (event) => {
 			const toolName = event.toolName;
 			const input = event.input;
 
@@ -307,7 +307,7 @@ export default function hooksEnhanced(pi: ExtensionAPI): void {
 
 	// ─── PostToolUseFailure ──────────────────────────────────────────────
 	if (hooks.PostToolUseFailure?.length) {
-		pi.on("tool_result", (event) => {
+		aery.on("tool_result", (event) => {
 			if (!event.isError) return undefined;
 
 			const toolName = event.toolName;
@@ -329,7 +329,7 @@ export default function hooksEnhanced(pi: ExtensionAPI): void {
 
 	// ─── SessionStart ────────────────────────────────────────────────────
 	if (hooks.SessionStart?.length) {
-		pi.on("session_start", () => {
+		aery.on("session_start", () => {
 			for (const hook of hooks.SessionStart!) {
 				runCommandHook(hook, { EVENT: "SessionStart" });
 			}
@@ -338,7 +338,7 @@ export default function hooksEnhanced(pi: ExtensionAPI): void {
 
 	// ─── SessionEnd ──────────────────────────────────────────────────────
 	if (hooks.SessionEnd?.length) {
-		pi.on("session_shutdown", () => {
+		aery.on("session_shutdown", () => {
 			for (const hook of hooks.SessionEnd!) {
 				runCommandHook(hook, { EVENT: "SessionEnd" });
 			}
@@ -347,7 +347,7 @@ export default function hooksEnhanced(pi: ExtensionAPI): void {
 
 	// ─── TurnStart ───────────────────────────────────────────────────────
 	if (hooks.TurnStart?.length) {
-		pi.on("turn_start", () => {
+		aery.on("turn_start", () => {
 			for (const hook of hooks.TurnStart!) {
 				runCommandHook(hook, { EVENT: "TurnStart" });
 			}
@@ -356,7 +356,7 @@ export default function hooksEnhanced(pi: ExtensionAPI): void {
 
 	// ─── TurnEnd ─────────────────────────────────────────────────────────
 	if (hooks.TurnEnd?.length) {
-		pi.on("turn_end", () => {
+		aery.on("turn_end", () => {
 			for (const hook of hooks.TurnEnd!) {
 				if (hook.async) {
 					runCommandHook(hook, { EVENT: "TurnEnd" });
@@ -369,7 +369,7 @@ export default function hooksEnhanced(pi: ExtensionAPI): void {
 
 	// ─── PreCompact ──────────────────────────────────────────────────────
 	if (hooks.PreCompact?.length) {
-		pi.on("session_before_compact", () => {
+		aery.on("session_before_compact", () => {
 			for (const hook of hooks.PreCompact!) {
 				const response = runCommandHook(hook, { EVENT: "PreCompact" });
 				if (response?.decision === "deny") {
@@ -382,7 +382,7 @@ export default function hooksEnhanced(pi: ExtensionAPI): void {
 
 	// ─── PostCompact ─────────────────────────────────────────────────────
 	if (hooks.PostCompact?.length) {
-		pi.on("session_compact", () => {
+		aery.on("session_compact", () => {
 			for (const hook of hooks.PostCompact!) {
 				runCommandHook(hook, { EVENT: "PostCompact" });
 			}

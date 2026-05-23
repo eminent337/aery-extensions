@@ -3,10 +3,11 @@
  */
 
 import type { ExtensionAPI } from "@eminent337/aery";
+import { registerToolAliases } from "./tool-aliases.js";
 import { Type } from "typebox";
 
-export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
-	pi.registerTool({
+export function registerAskUserQuestionTool(aery: ExtensionAPI): void {
+	aery.registerTool({
 		name: "ask_user_question",
 		description:
 			"Ask the user a question with multiple-choice options. Use when you need user input to make a decision or clarify requirements.",
@@ -112,4 +113,5 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 			};
 		},
 	});
+	registerToolAliases(aery, { ask_user_question: "AskUserQuestion" });
 }

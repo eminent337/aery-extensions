@@ -5,6 +5,7 @@
  */
 
 import type { ExtensionAPI } from "@eminent337/aery";
+import { registerToolAliases } from "./tool-aliases.js";
 import { Text } from "@eminent337/aery/tui";
 import { Type } from "typebox";
 
@@ -117,12 +118,37 @@ function formatResults(results: SearchResult[], query: string): string {
 	return results.map((r, i) => `${i + 1}. **${r.title}**\n   ${r.url}\n   ${r.snippet}`).join("\n\n");
 }
 
+function domainMatches(url: string, domains: string[]): boolean {
+	try {
+		const host = new URL(url).hostname.toLowerCase();
+		return domains.some((domain) => {
+			const normalized = domain.toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+			return host === normalized || host.endsWith(`.${normalized}`);
+		});
+	} catch {
+		return false;
+	}
+}
+
+function filterResultsByDomain(results: SearchResult[], allowed?: string[], blocked?: string[]): SearchResult[] {
+	let filtered = results;
+	if (allowed && allowed.length > 0) {
+		filtered = filtered.filter((result) => domainMatches(result.url, allowed));
+	}
+	if (blocked && blocked.length > 0) {
+		filtered = filtered.filter((result) => !domainMatches(result.url, blocked));
+	}
+	return filtered;
+}
+
 export default function (aery: ExtensionAPI) {
 	aery.registerTool({
 		name: "web_search",
 		description: "Search the web. Providers auto-selected by priority (firecrawl > tavily > exa > jina > brave > duckduckgo). Control with WEB_SEARCH_PROVIDER env var.",
 		parameters: Type.Object({
 			query: Type.String({ description: "Search query" }),
+			allowed_domains: Type.Optional(Type.Array(Type.String(), { description: "Only include results from these domains" })),
+			blocked_domains: Type.Optional(Type.Array(Type.String(), { description: "Exclude results from these domains" })),
 		}),
 		renderResult(result, options, theme) {
 			if (!result?.content) return new Text("Search complete", 0, 0);
@@ -145,7 +171,11 @@ export default function (aery: ExtensionAPI) {
 			let lastError: any;
 			for (const provider of chain) {
 				try {
-					const results = await provider.fn(params.query, signal);
+					const results = filterResultsByDomain(
+						await provider.fn(params.query, signal),
+						params.allowed_domains,
+						params.blocked_domains,
+					);
 					if (results.length > 0) {
 						return {
 							content: [{ type: "text" as const, text: formatResults(results, params.query) }],
@@ -160,4 +190,5 @@ export default function (aery: ExtensionAPI) {
 			return { content: [{ type: "text" as const, text: `Search failed: ${lastError?.message ?? "no results"}` }], details: {} };
 		},
 	});
+	registerToolAliases(aery, { web_search: "WebSearch" });
 }

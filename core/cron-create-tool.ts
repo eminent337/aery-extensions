@@ -3,6 +3,7 @@
  */
 
 import type { ExtensionAPI } from "@eminent337/aery";
+import { registerToolAliases } from "./tool-aliases.js";
 import { Type } from "typebox";
 import {
 	parseCronExpression,
@@ -11,10 +12,10 @@ import {
 } from "./cron-scheduler.js";
 
 export function registerCronCreateTool(
-	pi: ExtensionAPI,
+	aery: ExtensionAPI,
 	scheduler: CronScheduler,
 ): void {
-	pi.registerTool({
+	aery.registerTool({
 		name: "cron_create",
 		description:
 			"Schedule a recurring or one-shot prompt using a standard 5-field cron expression.",
@@ -98,4 +99,5 @@ export function registerCronCreateTool(
 			}
 		},
 	});
+	registerToolAliases(aery, { cron_create: "CronCreate" });
 }

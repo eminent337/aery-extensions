@@ -36,9 +36,9 @@ When you finish your part, end with:
 "Handoff summary: [what was done, what files changed, what to check next]"
 `.trim();
 
-export default function (pi: ExtensionAPI) {
+export default function (aery: ExtensionAPI) {
 	// Inject collaboration context once — skip if already in the system prompt
-	pi.on("before_agent_start", (_event, _ctx) => {
+	aery.on("before_agent_start", (_event, _ctx) => {
 		if (_event.systemPrompt.includes("Aery Specialist Collaboration")) return;
 		return { systemPrompt: `${_event.systemPrompt}\n\n${SPECIALIST_CONTEXT}` };
 	});

@@ -2,7 +2,7 @@
  * Cron Delete Tool — Remove a scheduled job.
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { registerToolAliases } from "./tool-aliases.js";
 import { Type } from "typebox";
 import type { CronScheduler } from "./cron-scheduler.js";

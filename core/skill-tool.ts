@@ -3,7 +3,7 @@
  * Supports model override, fork execution, and effort level settings.
  */
 
-import type { ExtensionAPI, ToolDefinition } from "@eminent337/aery";
+import type { ExtensionAPI, ToolDefinition } from "@aryee337/aery";
 import { Type } from "typebox";
 
 const SkillParams = Type.Object({

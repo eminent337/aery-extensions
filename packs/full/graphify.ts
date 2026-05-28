@@ -15,7 +15,7 @@ import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
 import { Type } from "typebox";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 const GRAPH_JSON = "graphify-out/graph.json";
 const GRAPH_REPORT = "graphify-out/GRAPH_REPORT.md";

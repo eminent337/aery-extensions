@@ -2,7 +2,7 @@
  * Ask User Question Tool — Interactive multiple-choice questions with previews.
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { registerToolAliases } from "./tool-aliases.js";
 import { Type } from "typebox";
 

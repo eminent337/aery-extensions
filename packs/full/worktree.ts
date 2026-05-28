@@ -7,7 +7,7 @@ import { execSync, spawnSync } from "node:child_process";
 import { existsSync, cpSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { homedir } from "node:os";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { Type } from "typebox";
 
 function run(cmd: string, cwd?: string): { ok: boolean; out: string; err: string } {

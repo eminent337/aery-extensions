@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { Type } from "typebox";
 
 type MemoryScope = "user" | "project" | "team";

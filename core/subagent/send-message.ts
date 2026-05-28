@@ -9,8 +9,8 @@ import { spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { ExtensionAPI } from "@eminent337/aery";
-import type { Message } from "@eminent337/aery-ai";
+import type { ExtensionAPI } from "@aryee337/aery";
+import type { Message } from "@aryee337/aery-ai";
 import { type AgentScope, discoverAgents, loadAgentMemory } from "./agents.js";
 import { completeBackgroundTask, findTaskByNameOrId, registerBackgroundTask } from "./background-tasks.js";
 

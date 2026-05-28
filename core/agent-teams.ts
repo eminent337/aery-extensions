@@ -6,7 +6,7 @@
 import { existsSync, writeFileSync, readFileSync, mkdirSync, readdirSync, unlinkSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { Type } from "typebox";
 
 const TEAMS_DIR = join(homedir(), ".aery", "teams");

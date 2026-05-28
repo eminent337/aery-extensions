@@ -3,7 +3,7 @@
  * Supports blocking/blockedBy, metadata, status transitions.
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { registerToolAliases } from "./tool-aliases.js";
 import { Type } from "typebox";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";

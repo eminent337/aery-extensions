@@ -3,7 +3,7 @@
  * On session_start, discovers MCP tools and registers them as Aery tools.
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { Type } from "typebox";
 import type { McpClientManager, McpToolDef } from "./types.js";
 

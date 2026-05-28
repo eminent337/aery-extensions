@@ -2,7 +2,7 @@
  * Cron Create Tool — Schedule recurring or one-shot prompts.
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { registerToolAliases } from "./tool-aliases.js";
 import { Type } from "typebox";
 import {

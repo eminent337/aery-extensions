@@ -3,7 +3,7 @@
  * Truncates to 40 chars so /resume is navigable.
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 export default function (aery: ExtensionAPI) {
 	let named = false;

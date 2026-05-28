@@ -6,7 +6,7 @@
 import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { Type } from "typebox";
 
 const MAILBOX_DIR = join(homedir(), ".aery", "mailbox");

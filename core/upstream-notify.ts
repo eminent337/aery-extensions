@@ -6,7 +6,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 const CACHE_PATH = join(homedir(), ".aery", "agent", "upstream-notify-cache.json");
 const ONE_DAY = 86400000;

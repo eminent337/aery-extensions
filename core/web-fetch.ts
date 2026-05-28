@@ -4,7 +4,7 @@
  * Uses Firecrawl if FIRECRAWL_API_KEY is set, otherwise plain fetch + html-to-markdown.
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { registerToolAliases } from "./tool-aliases.js";
 import { Type } from "typebox";
 

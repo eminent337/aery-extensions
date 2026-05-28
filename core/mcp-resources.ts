@@ -2,7 +2,7 @@
  * MCP Resource Tools — List and read resources from MCP servers.
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { Type } from "typebox";
 import type { McpClientManager } from "./types.js";
 

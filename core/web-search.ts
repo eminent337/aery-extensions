@@ -4,9 +4,9 @@
  * Control via WEB_SEARCH_PROVIDER env var (auto|firecrawl|tavily|exa|jina|brave|ddg)
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { registerToolAliases } from "./tool-aliases.js";
-import { Text } from "@eminent337/aery/tui";
+import { Text } from "@aryee337/aery/tui";
 import { Type } from "typebox";
 
 interface SearchResult { title: string; url: string; snippet: string; }

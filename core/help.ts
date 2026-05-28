@@ -3,7 +3,7 @@
  * Lists all registered commands with descriptions.
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 export default function (aery: ExtensionAPI) {
 	aery.registerCommand("help", {

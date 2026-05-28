@@ -6,7 +6,7 @@
  */
 
 import type { ChildProcess } from "node:child_process";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 export interface BackgroundTask {
 	id: string;

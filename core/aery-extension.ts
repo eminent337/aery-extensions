@@ -16,7 +16,7 @@
  * - MCP Resources: List/read MCP server resources
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { createLspManager } from "./lsp-manager.js";
 import { registerLspTool } from "./lsp-tool.js";
 import { createMcpClientManager } from "./mcp-client.js";

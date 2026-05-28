@@ -6,7 +6,7 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, basename } from "node:path";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 const SCAN_DIRS = [
 	".claude/commands",

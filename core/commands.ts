@@ -2,7 +2,7 @@
  * Aery Slash Commands — essential git workflow commands
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 export default function (aery: ExtensionAPI) {
 

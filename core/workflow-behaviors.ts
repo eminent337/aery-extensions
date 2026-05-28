@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 const AERY_WORKFLOW_PROMPT = `
 

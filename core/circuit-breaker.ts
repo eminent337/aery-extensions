@@ -4,7 +4,7 @@
  * Prevents infinite error loops burning tokens.
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 const MAX_CONSECUTIVE_FAILURES = 3;
 const MAX_TOOL_RESULT_CHARS = 20_000; // ~5K tokens

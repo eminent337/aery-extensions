@@ -10,7 +10,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { homedir } from "node:os";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 function resolveIncludes(content: string, basePath: string, visited = new Set<string>()): string {
 	return content.replace(/^@include\s+(.+)$/gm, (_match, rawPath) => {

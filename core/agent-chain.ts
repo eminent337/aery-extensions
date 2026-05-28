@@ -5,7 +5,7 @@
  * Uses sendUserMessage to chain within the same session (no sub-process needed).
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 export default function (_aery: ExtensionAPI) {
 	// Chain functionality is handled by subagent tool in chain mode

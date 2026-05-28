@@ -3,7 +3,7 @@
  * /marketplace — browse and install extension packs from github.com/eminent337/aery-extensions
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 const REGISTRY_URL = "https://raw.githubusercontent.com/eminent337/aery-extensions/main/registry.json";
 

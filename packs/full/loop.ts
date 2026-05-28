@@ -8,7 +8,7 @@
  *   /loop list — list active loops
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 interface LoopEntry {
 	id: string;

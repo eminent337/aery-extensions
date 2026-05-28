@@ -11,7 +11,7 @@
  * naturally hand off to each other without explicit commands.
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 const SPECIALIST_CONTEXT = `
 ## Aery Specialist Collaboration

@@ -5,7 +5,7 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 function getSeenPath(cwd: string): string {
 	const aeryDir = join(cwd, ".aery");

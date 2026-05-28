@@ -5,7 +5,7 @@
 
 import { readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { extname, resolve } from "node:path";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { registerToolAliases } from "./tool-aliases.js";
 import { Type } from "typebox";
 import type { NotebookContent, NotebookCell } from "./types.js";

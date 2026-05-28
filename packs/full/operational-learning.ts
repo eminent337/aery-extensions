@@ -6,7 +6,7 @@
 import { existsSync, appendFileSync, readFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 const LEARNINGS_PATH = join(homedir(), ".aery", "agent", "learnings.jsonl");
 

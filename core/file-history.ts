@@ -19,7 +19,7 @@ import {
 import { join, relative } from "node:path";
 import { homedir } from "node:os";
 import { createHash } from "node:crypto";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { Type } from "typebox";
 
 const HISTORY_DIR = join(homedir(), ".aery", "file-history");

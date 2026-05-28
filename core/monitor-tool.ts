@@ -5,7 +5,7 @@
 
 import { spawn, type ChildProcess } from "node:child_process";
 import { createInterface } from "node:readline";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { Type } from "typebox";
 
 const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes

@@ -2,7 +2,7 @@
  * Cron List Tool — List all scheduled jobs.
  */
 
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { registerToolAliases } from "./tool-aliases.js";
 import { Type } from "typebox";
 import { cronToHuman, type CronScheduler } from "./cron-scheduler.js";

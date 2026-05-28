@@ -7,7 +7,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 const PROFILES_PATH = join(homedir(), ".aery", "agent", "profiles.json");
 const MODELS_PATH = join(homedir(), ".aery", "agent", "models.json");

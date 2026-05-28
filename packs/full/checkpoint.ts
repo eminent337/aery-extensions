@@ -7,7 +7,7 @@ import { existsSync, writeFileSync, readFileSync, readdirSync, mkdirSync } from 
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { execSync } from "node:child_process";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 
 const CHECKPOINTS_DIR = join(homedir(), ".aery", "agent", "checkpoints");
 

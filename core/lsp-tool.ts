@@ -7,7 +7,7 @@
 import { extname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { readFile, stat } from "node:fs/promises";
-import type { ExtensionAPI } from "@eminent337/aery";
+import type { ExtensionAPI } from "@aryee337/aery";
 import { Type } from "typebox";
 import type { LspManager } from "./lsp-manager.js";
 import {

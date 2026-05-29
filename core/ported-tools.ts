@@ -83,7 +83,7 @@ export function registerBriefTool(aery: ExtensionAPI) {
 	aery.registerTool(briefTool);
 }
 
-export default function openclaudePorts(aery: ExtensionAPI) {
+export default function portedTools(aery: ExtensionAPI) {
     registerGlobTool(aery);
     registerBriefTool(aery);
 }

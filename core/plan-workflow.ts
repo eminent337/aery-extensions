@@ -62,7 +62,7 @@ export function registerExitPlanModeTool(aery: ExtensionAPI) {
 	aery.registerTool(exitPlanModeTool);
 }
 
-export default function openclaudeWorkflow(aery: ExtensionAPI) {
+export default function planWorkflow(aery: ExtensionAPI) {
 	registerEnterPlanModeTool(aery);
 	registerExitPlanModeTool(aery);
 }

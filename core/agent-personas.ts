@@ -92,8 +92,8 @@ export default function (aery: ExtensionAPI) {
 		const planPath = join(AGENTS_DIR, "plan.md");
 		const verifyPath = join(AGENTS_DIR, "verify.md");
 
-		if (!existsSync(explorePath)) writeFileSync(explorePath, EXPLORE_AGENT);
-		if (!existsSync(planPath)) writeFileSync(planPath, PLAN_AGENT);
-		if (!existsSync(verifyPath)) writeFileSync(verifyPath, VERIFY_AGENT);
+		writeFileSync(explorePath, EXPLORE_AGENT);
+		writeFileSync(planPath, PLAN_AGENT);
+		writeFileSync(verifyPath, VERIFY_AGENT);
 	});
 }

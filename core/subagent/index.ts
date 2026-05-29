@@ -29,6 +29,7 @@ import { Type } from "typebox";
 import { type AgentConfig, type AgentScope, discoverAgents, loadAgentMemory } from "./agents.js";
 import { registerBackgroundTask, completeBackgroundTask, registerBackgroundTaskTools } from "./background-tasks.js";
 import { registerSendMessageTool } from "./send-message.js";
+import { registerHandoffTool } from "./handoff.js";
 
 const MAX_PARALLEL_TASKS = 8;
 const MAX_CONCURRENCY = 4;
@@ -364,6 +365,77 @@ async function runSingleAgent(
 	onProcess?: (proc: ChildProcess) => void,
 	workspace: "inherit" | "branch" | "share" = "inherit",
 ): Promise<SingleResult> {
+	let currentAgentName = agentName;
+	let currentTask = task;
+	let getConv = getConversation;
+	let doFork = fork;
+	let accumulatedMessages: Message[] = [];
+	let finalResult: SingleResult | undefined;
+
+	while (true) {
+		const stepResult = await runSingleAgentStep(
+			defaultCwd, agents, currentAgentName, currentTask, cwd, step, signal, onUpdate, makeDetails, parentModel, doFork, getConv, onProcess, workspace
+		);
+
+		if (finalResult) {
+			finalResult.messages.push(...stepResult.messages);
+			finalResult.usage.turns += stepResult.usage.turns;
+			finalResult.usage.input += stepResult.usage.input;
+			finalResult.usage.output += stepResult.usage.output;
+			finalResult.usage.cacheRead += stepResult.usage.cacheRead;
+			finalResult.usage.cacheWrite += stepResult.usage.cacheWrite;
+			finalResult.usage.cost += stepResult.usage.cost;
+			finalResult.exitCode = stepResult.exitCode;
+			finalResult.agent = stepResult.agent;
+			finalResult.task = stepResult.task;
+		} else {
+			finalResult = stepResult;
+		}
+
+		accumulatedMessages = finalResult.messages;
+
+		// Check for Swarm-style handoff
+		let handoffTarget: string | undefined;
+		let handoffTask: string | undefined;
+		const lastAssistantMsg = [...accumulatedMessages].reverse().find(m => m.role === "assistant" && Array.isArray(m.content) && m.content.some((c: any) => c.type === "toolCall" && c.toolName === "transfer_to_agent"));
+		if (lastAssistantMsg) {
+			const toolCall = lastAssistantMsg.content.find((c: any) => c.type === "toolCall" && c.toolName === "transfer_to_agent") as any;
+			if (toolCall && toolCall.args) {
+				handoffTarget = toolCall.args.target_agent;
+				handoffTask = toolCall.args.objective;
+			}
+		}
+
+		if (handoffTarget && handoffTask && stepResult.exitCode === 0) {
+			currentAgentName = handoffTarget;
+			currentTask = handoffTask;
+			getConv = () => accumulatedMessages;
+			doFork = true;
+			continue;
+		}
+
+		break;
+	}
+
+	return finalResult!;
+}
+
+async function runSingleAgentStep(
+	defaultCwd: string,
+	agents: AgentConfig[],
+	agentName: string,
+	task: string,
+	cwd: string | undefined,
+	step: number | undefined,
+	signal: AbortSignal | undefined,
+	onUpdate: OnUpdateCallback | undefined,
+	makeDetails: (results: SingleResult[]) => SubagentDetails,
+	parentModel?: string,
+	fork: boolean = false,
+	getConversation?: () => Message[],
+	onProcess?: (proc: ChildProcess) => void,
+	workspace: "inherit" | "branch" | "share" = "inherit",
+): Promise<SingleResult> {
 	const agent = agents.find((a) => a.name === agentName);
 
 	if (!agent) {
@@ -683,6 +755,7 @@ const SubagentParams = Type.Object({
 export default function (aery: ExtensionAPI) {
 	registerBackgroundTaskTools(aery);
 	registerSendMessageTool(aery);
+	registerHandoffTool(aery);
 
 	const agentTool: ToolDefinition<typeof SubagentParams, SubagentDetails> = {
 		name: "Agent",

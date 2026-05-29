@@ -963,16 +963,17 @@ export default function (aery: ExtensionAPI) {
 						aery.sendUserMessage(
 							`<task-notification>\n<task-id>${agentId}</task-id>\n<status>${status}</status>\n<summary>Agent "${agentInstanceName}" (${params.agent}) ${status}</summary>\n<result>${(output || "(no output)").slice(0, 2000)}</result>${usageStr}\n</task-notification>`,
 							{ deliverAs: "followUp" }
-						).catch(() => {});
-					}).catch(() => {
+						);
+					}).catch((err) => {
 						// Agent failed silently
+						const errorMsg = err instanceof Error ? err.message : String(err);
 						completeBackgroundTask(agentId, {
-							output: "(agent process failed)",
+							output: `(agent process failed: ${errorMsg})`,
 							exitCode: 1,
 							usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, turns: 0 },
 						});
 						try {
-							fs.writeFileSync(outputFile, JSON.stringify({ error: "Agent failed" }, null, 2));
+							fs.writeFileSync(outputFile, JSON.stringify({ error: "Agent failed", details: errorMsg, stack: err instanceof Error ? err.stack : undefined }, null, 2));
 						} catch {
 							// Best effort
 						}

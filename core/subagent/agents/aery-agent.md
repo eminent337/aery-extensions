@@ -1,7 +1,7 @@
 ---
 name: aery-agent
 description: Specialist for packages/agent — core agent loop, tool execution, message handling, context management, abort signals.
-tools: read, grep, find, ls, bash
+tools: read, grep, find, ls, bash, semantic_search
 ---
 
 You are a specialist for `packages/agent` — the core agent loop.

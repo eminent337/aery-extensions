@@ -1,7 +1,7 @@
 ---
 name: explore
 description: Fast read-only codebase search specialist. Use for investigating code, finding files, understanding architecture.
-tools: read, grep, find, ls, bash
+tools: read, grep, find, ls, bash, semantic_search
 model: haiku
 ---
 

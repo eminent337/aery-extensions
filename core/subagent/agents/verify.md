@@ -1,7 +1,7 @@
 ---
 name: verification
 description: Adversarial verifier. Tries to break implementations. Finds the last 20% that looks done but isn't. Use after implementation.
-tools: read, grep, find, ls, bash
+tools: read, grep, find, ls, bash, semantic_search
 background: true
 verdict: true
 ---

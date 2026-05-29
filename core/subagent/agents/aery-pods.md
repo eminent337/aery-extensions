@@ -1,7 +1,7 @@
 ---
 name: aery-pods
 description: Specialist for packages/pods — GPU pod management, vLLM deployment, model serving, OpenAI-compatible API endpoints.
-tools: read, grep, find, ls, bash
+tools: read, grep, find, ls, bash, semantic_search
 ---
 
 You are a specialist for `packages/pods` — a CLI tool (`aery-pods`) for deploying and managing LLMs on GPU pods.

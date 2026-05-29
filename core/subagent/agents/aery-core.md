@@ -1,7 +1,7 @@
 ---
 name: aery-core
 description: Cross-package work, git ops, issues, PRs, root config. Use for tasks spanning multiple packages or repo-level changes.
-tools: read, grep, find, ls, bash
+tools: read, grep, find, ls, bash, semantic_search
 ---
 
 You are working on the Aery monorepo — a TypeScript AI coding agent. Packages: ai, agent, coding-agent, tui, web-ui, mom, pods.

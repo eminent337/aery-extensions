@@ -20,7 +20,10 @@
         "aery-extension",
         "agent-enhancements",
         "coordination-enhancements",
-        "browser"
+        "browser",
+        "docker",
+        "rag",
+        "swarm"
       ],
       "source": "eminent337/aery-extensions/core"
     },

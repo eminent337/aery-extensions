@@ -8,7 +8,7 @@ const AGENTS_DIR = join(homedir(), ".aery", "agents");
 const EXPLORE_AGENT = `---
 name: explore
 description: Fast agent specialized for exploring codebases. Use this when you need to quickly find files by patterns, search code for keywords, or answer questions about the codebase.
-model: haiku
+model: inherit
 background: true
 tools: run_command, view_file, grep_search, list_dir
 ---

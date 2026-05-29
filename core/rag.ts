@@ -31,53 +31,57 @@ export default function ragExtension(aery: ExtensionAPI) {
             required: ["pattern"]
         },
         async execute(_id, args) {
-            let xenova;
-            try {
-                xenova = await import("@xenova/transformers");
-            } catch (e) {
-                throw new Error("Missing dependencies. Run `npm i @xenova/transformers glob` to enable RAG.");
-            }
-
-            if (!pipelineFn) {
-                // @ts-ignore
-                pipelineFn = await xenova.pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2");
-            }
-
             const pattern = (args as any).pattern;
-            const files = globSync(pattern, { ignore: ["**/node_modules/**", "**/.git/**", "**/dist/**"] });
-            
-            let chunksIndexed = 0;
-            vectorStore.length = 0; // Clear existing
-
-            for (const file of files) {
-                try {
-                    const text = readFileSync(file, "utf-8");
-                    // Chunking: extremely simple split by newlines for demo purposes
-                    const lines = text.split("\n");
-                    const chunkSize = 20;
-                    for (let i = 0; i < lines.length; i += chunkSize) {
-                        const chunk = lines.slice(i, i + chunkSize).join("\n").trim();
-                        if (chunk.length < 10) continue;
-                        
-                        const output = await pipelineFn(chunk, { pooling: "mean", normalize: true });
-                        vectorStore.push({
-                            path: file,
-                            chunkIndex: i,
-                            text: chunk,
-                            embedding: Array.from(output.data)
-                        });
-                        chunksIndexed++;
-                    }
-                } catch (e) {} // Skip unreadable
-            }
-
-            return { content: [{ type: "text", text: `Successfully indexed ${chunksIndexed} code chunks from ${files.length} files.` }] };
+            const res = await autoIndex(pattern);
+            return { content: [{ type: "text", text: res }] };
         }
     });
 
+    async function autoIndex(pattern: string = "**/*.{ts,js,md,json}") {
+        let xenova;
+        try {
+            xenova = await import("@xenova/transformers");
+        } catch (e) {
+            throw new Error("Missing dependencies. Run `npm i @xenova/transformers glob` to enable RAG.");
+        }
+
+        if (!pipelineFn) {
+            // @ts-ignore
+            pipelineFn = await xenova.pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2");
+        }
+
+        const files = globSync(pattern, { ignore: ["**/node_modules/**", "**/.git/**", "**/dist/**"] });
+        
+        let chunksIndexed = 0;
+        vectorStore.length = 0; // Clear existing
+
+        for (const file of files) {
+            try {
+                const text = readFileSync(file, "utf-8");
+                // Chunking: extremely simple split by newlines for demo purposes
+                const lines = text.split("\n");
+                const chunkSize = 20;
+                for (let i = 0; i < lines.length; i += chunkSize) {
+                    const chunk = lines.slice(i, i + chunkSize).join("\n").trim();
+                    if (chunk.length < 10) continue;
+                    
+                    const output = await pipelineFn(chunk, { pooling: "mean", normalize: true });
+                    vectorStore.push({
+                        path: file,
+                        chunkIndex: i,
+                        text: chunk,
+                        embedding: Array.from(output.data)
+                    });
+                    chunksIndexed++;
+                }
+            } catch (e) {} // Skip unreadable
+        }
+        return `Successfully indexed ${chunksIndexed} code chunks from ${files.length} files.`;
+    }
+
     aery.registerTool({
         name: "semantic_search",
-        description: "Search the local codebase semantically using natural language queries. Must run rag_index first.",
+        description: "Search the local codebase semantically using natural language queries. Automatically indexes if not done yet.",
         parameters: {
             type: "object",
             properties: {
@@ -88,7 +92,7 @@ export default function ragExtension(aery: ExtensionAPI) {
         },
         async execute(_id, args) {
             if (vectorStore.length === 0) {
-                throw new Error("No indexed documents. Run `rag_index` first.");
+                await autoIndex(); // Auto-index if not done manually
             }
 
             const query = (args as any).query;

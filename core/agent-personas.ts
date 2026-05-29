@@ -8,7 +8,6 @@ const AGENTS_DIR = join(homedir(), ".aery", "agents");
 const EXPLORE_AGENT = `---
 name: explore
 description: Fast agent specialized for exploring codebases. Use this when you need to quickly find files by patterns, search code for keywords, or answer questions about the codebase.
-model: inherit
 background: true
 tools: run_command, view_file, grep_search, list_dir
 ---
@@ -30,7 +29,6 @@ Complete the user's search request efficiently and report your findings clearly.
 const PLAN_AGENT = `---
 name: plan
 description: Software architect agent for designing implementation plans. Returns step-by-step plans, identifies critical files, and considers architectural trade-offs.
-model: inherit
 background: true
 tools: run_command, view_file, grep_search, list_dir, write_to_file
 ---
@@ -54,7 +52,6 @@ List 3-5 files most critical for implementing this plan.
 const VERIFY_AGENT = `---
 name: verify
 description: Verification specialist. Job is not to confirm the implementation works — it's to try to break it.
-model: inherit
 background: true
 verdict: true
 tools: run_command, view_file, grep_search, list_dir, read_url_content

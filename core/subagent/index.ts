@@ -12,10 +12,14 @@
  * Uses JSON mode to capture structured output from subagents.
  */
 
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, exec, type ChildProcess } from "node:child_process";
+import { promisify } from "node:util";
+const execAsync = promisify(exec);
 import * as fs from "node:fs";
+import { mkdtemp } from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
+const makeTempDir = async (prefix: string) => await mkdtemp(path.join(os.tmpdir(), prefix));
 import { type ExtensionAPI, type ToolDefinition, getMarkdownTheme, withFileMutationQueue } from "@aryee337/aery";
 import type { Message } from "@aryee337/aery-ai";
 import { StringEnum } from "@aryee337/aery-ai";
@@ -358,6 +362,7 @@ async function runSingleAgent(
 	fork: boolean = false,
 	getConversation?: () => Message[],
 	onProcess?: (proc: ChildProcess) => void,
+	workspace: "inherit" | "branch" | "share" = "inherit",
 ): Promise<SingleResult> {
 	const agent = agents.find((a) => a.name === agentName);
 
@@ -487,10 +492,24 @@ async function runSingleAgent(
 			proc.kill("SIGTERM");
 		}, agentTimeout);
 
+		let finalCwd = cwd ?? defaultCwd;
+		let worktreeDir: string | null = null;
+		if (workspace === "branch" || workspace === "share") {
+			try {
+				await execAsync("git rev-parse --is-inside-work-tree", { cwd: finalCwd });
+				worktreeDir = await makeTempDir("aery-worktree-");
+				const branchFlag = workspace === "branch" ? `-b subagent-${Math.random().toString(36).slice(2, 8)}` : "";
+				await execAsync(`git worktree add ${branchFlag} ${worktreeDir}`, { cwd: finalCwd });
+				finalCwd = worktreeDir;
+			} catch (e) {
+				console.warn("Failed to create git worktree, falling back to inherit:", e);
+			}
+		}
+
 		const exitCode = await new Promise<number>((resolve) => {
 			const invocation = getPiInvocation(args);
 			const proc = spawn(invocation.command, invocation.args, {
-				cwd: cwd ?? defaultCwd,
+				cwd: finalCwd,
 				shell: false,
 				stdio: ["ignore", "pipe", "pipe"],
 			});
@@ -601,19 +620,33 @@ async function runSingleAgent(
 			} catch {
 				/* ignore */
 			}
+		if (worktreeDir) {
+			try {
+				await execAsync(`git worktree remove --force ${worktreeDir}`);
+			} catch {
+				/* ignore */
+			}
+		}
 	}
 }
+
+const WorkspaceModeSchema = StringEnum(["inherit", "branch", "share"] as const, {
+	description: "Workspace mode for the subagent. 'inherit' (default) uses the same workspace. 'branch' creates a new isolated workspace cloned from the parent. 'share' creates a new workspace sharing the parent's underlying repository directory.",
+	default: "inherit",
+});
 
 const TaskItem = Type.Object({
 	agent: Type.String({ description: "Name of the agent to invoke" }),
 	task: Type.String({ description: "Task to delegate to the agent" }),
 	cwd: Type.Optional(Type.String({ description: "Working directory for the agent process" })),
+	workspace: Type.Optional(WorkspaceModeSchema),
 });
 
 const ChainItem = Type.Object({
 	agent: Type.String({ description: "Name of the agent to invoke" }),
 	task: Type.String({ description: "Task with optional {previous} placeholder for prior output" }),
 	cwd: Type.Optional(Type.String({ description: "Working directory for the agent process" })),
+	workspace: Type.Optional(WorkspaceModeSchema),
 });
 
 const AgentScopeSchema = StringEnum(["user", "project", "both"] as const, {
@@ -641,6 +674,7 @@ const SubagentParams = Type.Object({
 		Type.Boolean({ description: "Prompt before running project-local agents. Default: true.", default: true }),
 	),
 	cwd: Type.Optional(Type.String({ description: "Working directory for the agent process (single mode)" })),
+	workspace: Type.Optional(WorkspaceModeSchema),
 });
 
 export default function (aery: ExtensionAPI) {
@@ -764,6 +798,8 @@ export default function (aery: ExtensionAPI) {
 						parentModel,
 						params.fork,
 						ctx.getConversation,
+						undefined,
+						step.workspace ?? params.workspace,
 					);
 					results.push(result);
 
@@ -847,6 +883,8 @@ export default function (aery: ExtensionAPI) {
 						parentModel,
 						params.fork,
 						ctx.getConversation,
+						undefined,
+						t.workspace ?? params.workspace,
 					);
 					allResults[index] = result;
 					emitParallelUpdate();
@@ -897,6 +935,7 @@ export default function (aery: ExtensionAPI) {
 						params.fork,
 						ctx.getConversation,
 						(proc) => registerBackgroundTask(agentId, agentInstanceName, params.task, proc, outputFile),
+						params.workspace,
 					).then((result) => {
 						// Write result to file when complete
 						try {
@@ -965,6 +1004,8 @@ export default function (aery: ExtensionAPI) {
 					parentModel,
 					params.fork,
 					ctx.getConversation,
+					undefined,
+					params.workspace,
 				);
 				const isError = result.exitCode !== 0 || result.stopReason === "error" || result.stopReason === "aborted";
 				if (isError) {

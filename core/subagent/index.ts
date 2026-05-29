@@ -961,7 +961,8 @@ export default function (aery: ExtensionAPI) {
 							? `\nUsage: ${result.usage.turns} turns, ↑${result.usage.input} ↓${result.usage.output} tokens, $${result.usage.cost.toFixed(4)}`
 							: "";
 						aery.sendUserMessage(
-							`<task-notification>\n<task-id>${agentId}</task-id>\n<status>${status}</status>\n<summary>Agent "${agentInstanceName}" (${params.agent}) ${status}</summary>\n<result>${(output || "(no output)").slice(0, 2000)}</result>${usageStr}\n</task-notification>`
+							`<task-notification>\n<task-id>${agentId}</task-id>\n<status>${status}</status>\n<summary>Agent "${agentInstanceName}" (${params.agent}) ${status}</summary>\n<result>${(output || "(no output)").slice(0, 2000)}</result>${usageStr}\n</task-notification>`,
+							{ deliverAs: "followUp" }
 						).catch(() => {});
 					}).catch(() => {
 						// Agent failed silently

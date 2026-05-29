@@ -395,7 +395,7 @@ async function runSingleAgent(
 			if (conversation.length > 0) {
 				const tmpDir = await makeTempDir("aery-fork-");
 				tmpForkDir = tmpDir;
-				tmpForkPath = join(tmpDir, "messages.json");
+				tmpForkPath = path.join(tmpDir, "messages.json");
 
 				// Summarize conversation for efficiency (provider-agnostic)
 				// Keep last 20 messages + summarize older ones
@@ -425,7 +425,7 @@ async function runSingleAgent(
 					parentTask: task,
 				};
 
-				writeFileSync(tmpForkPath, JSON.stringify(childContext, null, 2));
+				fs.writeFileSync(tmpForkPath, JSON.stringify(childContext, null, 2));
 				args.push("--initial-messages", tmpForkPath);
 				isFork = true;
 			}
@@ -458,6 +458,10 @@ async function runSingleAgent(
 		}
 	};
 
+	let timeoutId: NodeJS.Timeout | undefined;
+	let worktreeDir: string | null = null;
+	let proc: ChildProcess | undefined;
+
 	try {
 		// In fork mode, agent instructions are injected as user message (not system prompt)
 		// to preserve prompt cache hits from parent's system prompt
@@ -487,13 +491,12 @@ async function runSingleAgent(
 
 		// Agent timeout: 5 minutes for explore, 10 minutes for others
 		const agentTimeout = agent.name === "explore" ? 5 * 60 * 1000 : 10 * 60 * 1000;
-		const timeoutId = setTimeout(() => {
+		timeoutId = setTimeout(() => {
 			wasTimeout = true;
-			proc.kill("SIGTERM");
+			proc?.kill("SIGTERM");
 		}, agentTimeout);
 
 		let finalCwd = cwd ?? defaultCwd;
-		let worktreeDir: string | null = null;
 		if (workspace === "branch" || workspace === "share") {
 			try {
 				await execAsync("git rev-parse --is-inside-work-tree", { cwd: finalCwd });
@@ -508,7 +511,7 @@ async function runSingleAgent(
 
 		const exitCode = await new Promise<number>((resolve) => {
 			const invocation = getPiInvocation(args);
-			const proc = spawn(invocation.command, invocation.args, {
+			proc = spawn(invocation.command, invocation.args, {
 				cwd: finalCwd,
 				shell: false,
 				stdio: ["ignore", "pipe", "pipe"],
@@ -576,9 +579,9 @@ async function runSingleAgent(
 			if (signal) {
 				const killProc = () => {
 					wasAborted = true;
-					proc.kill("SIGTERM");
+					proc?.kill("SIGTERM");
 					setTimeout(() => {
-						if (!proc.killed) proc.kill("SIGKILL");
+						if (proc && !proc.killed) proc.kill("SIGKILL");
 					}, 5000);
 				};
 				if (signal.aborted) killProc();
@@ -863,7 +866,7 @@ export default function (aery: ExtensionAPI) {
 					}
 				};
 
-				const results = await mapWithConcurrencyLimit(params.tasks, MAX_CONCURRENCY, async (t, index) => {
+				const results = await mapWithConcurrencyLimit(params.tasks, MAX_CONCURRENCY, async (t: any, index) => {
 					const result = await runSingleAgent(
 						ctx.cwd,
 						agents,
@@ -928,6 +931,7 @@ export default function (aery: ExtensionAPI) {
 						params.agent,
 						params.task,
 						params.cwd,
+						undefined,
 						undefined,
 						undefined,
 						makeDetails("single"),

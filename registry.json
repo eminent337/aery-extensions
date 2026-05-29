@@ -19,7 +19,8 @@
         "coordinator-mode",
         "aery-extension",
         "agent-enhancements",
-        "coordination-enhancements"
+        "coordination-enhancements",
+        "browser"
       ],
       "source": "eminent337/aery-extensions/core"
     },

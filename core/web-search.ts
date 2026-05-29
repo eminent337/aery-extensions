@@ -142,7 +142,7 @@ function filterResultsByDomain(results: SearchResult[], allowed?: string[], bloc
 }
 
 export default function (aery: ExtensionAPI) {
-	aery.registerTool({
+	const webSearchTool = {
 		name: "web_search",
 		description: "Search the web. Providers auto-selected by priority (firecrawl > tavily > exa > jina > brave > duckduckgo). Control with WEB_SEARCH_PROVIDER env var.",
 		parameters: Type.Object({
@@ -189,6 +189,7 @@ export default function (aery: ExtensionAPI) {
 			}
 			return { content: [{ type: "text" as const, text: `Search failed: ${lastError?.message ?? "no results"}` }], details: {} };
 		},
-	});
-	registerToolAliases(aery, { web_search: "WebSearch" });
+	};
+	aery.registerTool(webSearchTool);
+	aery.registerTool({ ...webSearchTool, name: "WebSearch", label: "WebSearch" });
 }

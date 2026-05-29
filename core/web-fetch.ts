@@ -49,7 +49,7 @@ function htmlToMarkdown(html: string): string {
 }
 
 export default function (aery: ExtensionAPI) {
-	aery.registerTool({
+	const webFetchTool = {
 		name: "web_fetch",
 		description: "Fetch a URL and return its content as markdown. Use for reading documentation, articles, or any web page.",
 		parameters: Type.Object({
@@ -107,6 +107,7 @@ export default function (aery: ExtensionAPI) {
 				details: { url: params.url, bytes: text.length },
 			};
 		},
-	});
-	registerToolAliases(aery, { web_fetch: "WebFetch" });
+	};
+	aery.registerTool(webFetchTool);
+	aery.registerTool({ ...webFetchTool, name: "WebFetch", label: "WebFetch" });
 }

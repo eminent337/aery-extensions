@@ -23,7 +23,8 @@
         "browser",
         "docker",
         "rag",
-        "swarm"
+        "swarm",
+        "provider-profiles"
       ],
       "source": "eminent337/aery-extensions/core"
     },

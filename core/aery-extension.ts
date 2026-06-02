@@ -14,6 +14,14 @@
  * - Memory Behaviors: User/project/team memory guidance and SaveMemory
  * - Workflow Behaviors: Continuous work, background agents, planning, verification
  * - MCP Resources: List/read MCP server resources
+ * - Code Search: Ripgrep-based multi-query code search
+ * - String Replace: Targeted surgical file editing with validation
+ * - File Picker: Fuzzy semantic file finding with scoring
+ * - Browser Enhanced: Multi-step browser automation with console capture
+ * - Context Prune: Session context summarization and checkpointing
+ * - Todo Tracker: Ordered step-by-step plan tracking with completion status
+ * - Code Reviewer: Review changes for bugs, security issues, and correctness
+ * - Web Researcher: Multi-source web research and synthesis
  */
 
 import type { ExtensionAPI } from "@aryee337/aery";
@@ -37,6 +45,14 @@ import memoryBehaviors from "./memory-behaviors.js";
 import workflowBehaviors from "./workflow-behaviors.js";
 import planModeTools from "./plan-mode-tools.js";
 import { registerMcpResourceTools } from "./mcp-resources.js";
+import { registerCodeSearchTool } from "./code-search.js";
+import { registerStrReplaceTool } from "./str-replace.js";
+import { registerFilePickerTool } from "./file-picker.js";
+import { registerBrowserEnhancedTools } from "./browser-enhanced.js";
+import { registerContextPruneTool } from "./context-prune.js";
+import { registerTodoTrackerTool } from "./todo-tracker.js";
+import { registerCodeReviewerTool } from "./code-reviewer.js";
+import { registerWebResearcherTool } from "./web-researcher.js";
 
 export default function aeryExtension(aery: ExtensionAPI): void {
 	// ─── LSP (Language Server Protocol) ──────────────────────────────────
@@ -88,6 +104,30 @@ export default function aeryExtension(aery: ExtensionAPI): void {
 	registerCronCreateTool(aery, cronScheduler);
 	registerCronDeleteTool(aery, cronScheduler);
 	registerCronListTool(aery, cronScheduler);
+
+	// ─── Code Search ─────────────────────────────────────────────────────
+	registerCodeSearchTool(aery);
+
+	// ─── String Replace ──────────────────────────────────────────────────
+	registerStrReplaceTool(aery);
+
+	// ─── File Picker ─────────────────────────────────────────────────────
+	registerFilePickerTool(aery);
+
+	// ─── Browser Enhanced ────────────────────────────────────────────────
+	registerBrowserEnhancedTools(aery);
+
+	// ─── Context Prune ───────────────────────────────────────────────────
+	registerContextPruneTool(aery);
+
+	// ─── Todo Tracker ────────────────────────────────────────────────────
+	registerTodoTrackerTool(aery);
+
+	// ─── Code Reviewer ───────────────────────────────────────────────────
+	registerCodeReviewerTool(aery);
+
+	// ─── Web Researcher ──────────────────────────────────────────────────
+	registerWebResearcherTool(aery);
 
 	// ─── Lifecycle ───────────────────────────────────────────────────────
 	aery.on("session_start", async () => {

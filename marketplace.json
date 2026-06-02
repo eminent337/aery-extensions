@@ -1,0 +1,233 @@
+{
+  "name": "aery-extensions",
+  "owner": {
+    "name": "Aery",
+    "email": "support@aery.ai"
+  },
+  "metadata": {
+    "description": "Official Aery extensions and packs",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "core",
+      "description": "Essential extensions — auto-installed with Aery",
+      "source": {
+        "github": "eminent337/aery-extensions/core"
+      }
+    },
+    {
+      "name": "full",
+      "description": "All Aery extensions — multi-agent, loop, session memory, graphify, and more",
+      "source": {
+        "github": "eminent337/aery-extensions/packs/full"
+      }
+    },
+    {
+      "name": "pi-skills",
+      "description": "Official pi-skills — Brave search, browser automation, Gmail, Google Calendar/Drive, transcription, VS Code, YouTube transcripts",
+      "source": {
+        "url": "https://github.com/badlogic/pi-skills"
+      },
+      "category": "skills"
+    },
+    {
+      "name": "interactive-shell",
+      "description": "Full PTY shell overlay — lets Aery autonomously control interactive CLIs (vim, python REPL, etc). User can take over anytime.",
+      "source": {
+        "url": "https://github.com/nicobailon/pi-interactive-shell"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "model-switch",
+      "description": "Lets the agent switch models on its own mid-task",
+      "source": {
+        "url": "https://github.com/nicobailon/pi-model-switch"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "memory",
+      "description": "Plain-Markdown memory system — persistent notes across sessions",
+      "source": {
+        "url": "https://github.com/jo-inc/pi-mem"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "hashline-edit",
+      "description": "Content-anchored line references for read/grep/edit tools — more token efficient",
+      "source": {
+        "url": "https://github.com/RimuruW/pi-hashline-edit"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "rtk",
+      "description": "Routes bash commands through rtk for LLM token savings",
+      "source": {
+        "url": "https://github.com/sherif-fanous/pi-rtk"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "oh-aery",
+      "description": "One-click setup — extensions, themes, prompts, skills, and ant-colony swarm. Like oh-my-zsh for Aery.",
+      "source": {
+        "url": "https://github.com/ifiokjr/oh-pi"
+      },
+      "category": "bundle"
+    },
+    {
+      "name": "superpowers",
+      "description": "Structured development methodology — brainstorm, plan, TDD, debug, review. Adapted from obra/superpowers for Aery.",
+      "source": {
+        "url": "https://github.com/eminent337/aery-superpowers"
+      },
+      "category": "skills"
+    },
+    {
+      "name": "stitch",
+      "description": "Google Stitch design integration — list projects/screens, fetch screen code/images, extract design context, generate new screens, and map Stitch screens to site routes. Requires @_davideast/stitch-mcp authentication.",
+      "source": {
+        "github": "eminent337/aery-extensions"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "geospatial",
+      "description": "Geospatial tools — GDAL, coordinate systems, GIS workflows",
+      "source": {
+        "github": "eminent337/aery-extensions/packs/geospatial"
+      }
+    },
+    {
+      "name": "data-science",
+      "description": "Data science tools — Jupyter, pandas, numpy helpers",
+      "source": {
+        "github": "eminent337/aery-extensions/packs/data-science"
+      }
+    },
+    {
+      "name": "graphify",
+      "description": "Knowledge graph for codebases — persistent graph of project structure, god nodes, community detection. Requires Python graphify package.",
+      "source": {
+        "github": "eminent337/aery-extensions"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "loop",
+      "description": "Loop agent — repeats tasks until a condition is met or manually stopped",
+      "source": {
+        "github": "eminent337/aery-extensions"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "worktree",
+      "description": "Git worktree manager — parallel development in isolated branches with tmux",
+      "source": {
+        "github": "eminent337/aery-extensions"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "todo-manager",
+      "description": "Todo list manager — persistent task tracking across sessions",
+      "source": {
+        "github": "eminent337/aery-extensions"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "cross-agent",
+      "description": "Cross-agent communication — share context between multiple Aery sessions",
+      "source": {
+        "github": "eminent337/aery-extensions"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "session-timeline",
+      "description": "Session timeline — visual history of all agent actions in a session",
+      "source": {
+        "github": "eminent337/aery-extensions"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "checkpoint",
+      "description": "Checkpoint — save and restore session state at any point",
+      "source": {
+        "github": "eminent337/aery-extensions"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "operational-learning",
+      "description": "Operational learning — agent learns from past sessions and improves",
+      "source": {
+        "github": "eminent337/aery-extensions"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "user-model",
+      "description": "User model — agent remembers your preferences and working style",
+      "source": {
+        "github": "eminent337/aery-extensions"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "skill-watcher",
+      "description": "Skill watcher — monitors and suggests skills based on your workflow",
+      "source": {
+        "github": "eminent337/aery-extensions"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "skill-autocreate",
+      "description": "Skill autocreate — automatically saves reusable skills in the background",
+      "source": {
+        "github": "eminent337/aery-extensions"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "health",
+      "description": "Health check — runs linters, tests, and type checks on your project",
+      "source": {
+        "github": "eminent337/aery-extensions"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "multi-agent",
+      "description": "Multi-agent — spawn and coordinate multiple agents in parallel",
+      "source": {
+        "github": "eminent337/aery-extensions"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "agent-chain",
+      "description": "Agent chain — chain agents sequentially, passing output between them",
+      "source": {
+        "github": "eminent337/aery-extensions"
+      },
+      "category": "extension"
+    },
+    {
+      "name": "agent-teams",
+      "description": "Agent teams — create teams of specialized agents for complex tasks",
+      "source": {
+        "github": "eminent337/aery-extensions"
+      },
+      "category": "extension"
+    }
+  ]
+}

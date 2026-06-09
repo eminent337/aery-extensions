@@ -1,10 +1,21 @@
 {
   "version": "1.1.0",
   "packs": {
-    "core": {
-      "description": "Essential extensions \u2014 auto-installed with Aery",
-      "auto": true,
+    "full": {
+      "description": "All Aery extensions — browser, subagent, multi-agent, loop, LSP, MCP, and more",
       "extensions": [
+        "graphify",
+        "loop",
+        "worktree",
+        "todo-manager",
+        "cross-agent",
+        "session-timeline",
+        "checkpoint",
+        "operational-learning",
+        "user-model",
+        "skill-watcher",
+        "skill-autocreate",
+        "health",
         "damage-control",
         "model-failover",
         "marketplace",
@@ -26,28 +37,10 @@
         "swarm",
         "provider-profiles"
       ],
-      "source": "eminent337/aery-extensions/core"
-    },
-    "full": {
-      "description": "All Aery extensions \u2014 multi-agent, loop, session memory, graphify, and more",
-      "extensions": [
-        "graphify",
-        "loop",
-        "worktree",
-        "todo-manager",
-        "cross-agent",
-        "session-timeline",
-        "checkpoint",
-        "operational-learning",
-        "user-model",
-        "skill-watcher",
-        "skill-autocreate",
-        "health"
-      ],
       "source": "eminent337/aery-extensions/packs/full"
     },
     "pi-skills": {
-      "description": "Official pi-skills \u2014 Brave search, browser automation, Gmail, Google Calendar/Drive, transcription, VS Code, YouTube transcripts",
+      "description": "Official pi-skills — Brave search, browser automation, Gmail, Google Calendar/Drive, transcription, VS Code, YouTube transcripts",
       "extensions": [
         "brave-search",
         "browser-tools",
@@ -63,7 +56,7 @@
       "type": "skills"
     },
     "interactive-shell": {
-      "description": "Full PTY shell overlay \u2014 lets Aery autonomously control interactive CLIs (vim, python REPL, etc). User can take over anytime.",
+      "description": "Full PTY shell overlay — lets Aery autonomously control interactive CLIs (vim, python REPL, etc). User can take over anytime.",
       "source": "nicobailon/pi-interactive-shell",
       "install": "https://github.com/nicobailon/pi-interactive-shell",
       "type": "extension"
@@ -75,13 +68,13 @@
       "type": "extension"
     },
     "memory": {
-      "description": "Plain-Markdown memory system \u2014 persistent notes across sessions",
+      "description": "Plain-Markdown memory system — persistent notes across sessions",
       "source": "jo-inc/pi-mem",
       "install": "https://github.com/jo-inc/pi-mem",
       "type": "extension"
     },
     "hashline-edit": {
-      "description": "Content-anchored line references for read/grep/edit tools \u2014 more token efficient",
+      "description": "Content-anchored line references for read/grep/edit tools — more token efficient",
       "source": "RimuruW/pi-hashline-edit",
       "install": "https://github.com/RimuruW/pi-hashline-edit",
       "type": "extension"
@@ -93,121 +86,121 @@
       "type": "extension"
     },
     "oh-aery": {
-      "description": "One-click setup \u2014 extensions, themes, prompts, skills, and ant-colony swarm. Like oh-my-zsh for Aery.",
+      "description": "One-click setup — extensions, themes, prompts, skills, and ant-colony swarm. Like oh-my-zsh for Aery.",
       "source": "ifiokjr/oh-pi",
       "install": "https://github.com/ifiokjr/oh-pi",
       "type": "bundle"
     },
     "superpowers": {
-      "description": "Structured development methodology \u2014 brainstorm, plan, TDD, debug, review. Adapted from obra/superpowers for Aery.",
+      "description": "Structured development methodology — brainstorm, plan, TDD, debug, review. Adapted from obra/superpowers for Aery.",
       "source": "eminent337/aery-superpowers",
       "install": "https://github.com/eminent337/aery-superpowers",
       "type": "skills"
     },
     "stitch": {
-      "description": "Google Stitch design integration \u2014 list projects/screens, fetch screen code/images, extract design context, generate new screens, and map Stitch screens to site routes. Requires @_davideast/stitch-mcp authentication.",
+      "description": "Google Stitch design integration — list projects/screens, fetch screen code/images, extract design context, generate new screens, and map Stitch screens to site routes. Requires @_davideast/stitch-mcp authentication.",
       "source": "eminent337/aery-extensions",
       "file": "packs/design/stitch.ts",
       "type": "extension"
     },
     "geospatial": {
-      "description": "Geospatial tools \u2014 GDAL, coordinate systems, GIS workflows",
+      "description": "Geospatial tools — GDAL, coordinate systems, GIS workflows",
       "extensions": [],
       "source": "eminent337/aery-extensions/packs/geospatial",
       "coming_soon": true
     },
     "data-science": {
-      "description": "Data science tools \u2014 Jupyter, pandas, numpy helpers",
+      "description": "Data science tools — Jupyter, pandas, numpy helpers",
       "extensions": [],
       "source": "eminent337/aery-extensions/packs/data-science",
       "coming_soon": true
     },
     "graphify": {
-      "description": "Knowledge graph for codebases \u2014 persistent graph of project structure, god nodes, community detection. Requires Python graphify package.",
+      "description": "Knowledge graph for codebases — persistent graph of project structure, god nodes, community detection. Requires Python graphify package.",
       "source": "eminent337/aery-extensions",
-      "file": "core/graphify.ts",
+      "file": "packs/full/graphify.ts",
       "type": "extension"
     },
     "loop": {
-      "description": "Loop agent \u2014 repeats tasks until a condition is met or manually stopped",
+      "description": "Loop agent — repeats tasks until a condition is met or manually stopped",
       "source": "eminent337/aery-extensions",
       "file": "packs/full/loop.ts",
       "type": "extension"
     },
     "worktree": {
-      "description": "Git worktree manager \u2014 parallel development in isolated branches with tmux",
+      "description": "Git worktree manager — parallel development in isolated branches with tmux",
       "source": "eminent337/aery-extensions",
       "file": "packs/full/worktree.ts",
       "type": "extension"
     },
     "todo-manager": {
-      "description": "Todo list manager \u2014 persistent task tracking across sessions",
+      "description": "Todo list manager — persistent task tracking across sessions",
       "source": "eminent337/aery-extensions",
       "file": "packs/full/todo-manager.ts",
       "type": "extension"
     },
     "cross-agent": {
-      "description": "Cross-agent communication \u2014 share context between multiple Aery sessions",
+      "description": "Cross-agent communication — share context between multiple Aery sessions",
       "source": "eminent337/aery-extensions",
       "file": "packs/full/cross-agent.ts",
       "type": "extension"
     },
     "session-timeline": {
-      "description": "Session timeline \u2014 visual history of all agent actions in a session",
+      "description": "Session timeline — visual history of all agent actions in a session",
       "source": "eminent337/aery-extensions",
       "file": "packs/full/session-timeline.ts",
       "type": "extension"
     },
     "checkpoint": {
-      "description": "Checkpoint \u2014 save and restore session state at any point",
+      "description": "Checkpoint — save and restore session state at any point",
       "source": "eminent337/aery-extensions",
       "file": "packs/full/checkpoint.ts",
       "type": "extension"
     },
     "operational-learning": {
-      "description": "Operational learning \u2014 agent learns from past sessions and improves",
+      "description": "Operational learning — agent learns from past sessions and improves",
       "source": "eminent337/aery-extensions",
       "file": "packs/full/operational-learning.ts",
       "type": "extension"
     },
     "user-model": {
-      "description": "User model \u2014 agent remembers your preferences and working style",
+      "description": "User model — agent remembers your preferences and working style",
       "source": "eminent337/aery-extensions",
       "file": "packs/full/user-model.ts",
       "type": "extension"
     },
     "skill-watcher": {
-      "description": "Skill watcher \u2014 monitors and suggests skills based on your workflow",
+      "description": "Skill watcher — monitors and suggests skills based on your workflow",
       "source": "eminent337/aery-extensions",
       "file": "packs/full/skill-watcher.ts",
       "type": "extension"
     },
     "skill-autocreate": {
-      "description": "Skill autocreate \u2014 automatically saves reusable skills in the background",
+      "description": "Skill autocreate — automatically saves reusable skills in the background",
       "source": "eminent337/aery-extensions",
       "file": "packs/full/skill-autocreate.ts",
       "type": "extension"
     },
     "health": {
-      "description": "Health check \u2014 runs linters, tests, and type checks on your project",
+      "description": "Health check — runs linters, tests, and type checks on your project",
       "source": "eminent337/aery-extensions",
       "file": "packs/full/health.ts",
       "type": "extension"
     },
     "multi-agent": {
-      "description": "Multi-agent \u2014 spawn and coordinate multiple agents in parallel",
+      "description": "Multi-agent — spawn and coordinate multiple agents in parallel",
       "source": "eminent337/aery-extensions",
       "file": "packs/full/multi-agent.ts",
       "type": "extension"
     },
     "agent-chain": {
-      "description": "Agent chain \u2014 chain agents sequentially, passing output between them",
+      "description": "Agent chain — chain agents sequentially, passing output between them",
       "source": "eminent337/aery-extensions",
       "file": "packs/full/agent-chain.ts",
       "type": "extension"
     },
     "agent-teams": {
-      "description": "Agent teams \u2014 create teams of specialized agents for complex tasks",
+      "description": "Agent teams — create teams of specialized agents for complex tasks",
       "source": "eminent337/aery-extensions",
       "file": "packs/full/agent-teams.ts",
       "type": "extension"

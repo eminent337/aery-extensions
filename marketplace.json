@@ -10,15 +10,8 @@
   },
   "plugins": [
     {
-      "name": "core",
-      "description": "Essential extensions — auto-installed with Aery",
-      "source": {
-        "github": "eminent337/aery-extensions/core"
-      }
-    },
-    {
       "name": "full",
-      "description": "All Aery extensions — multi-agent, loop, session memory, graphify, and more",
+      "description": "All Aery extensions — browser, subagent, multi-agent, loop, LSP, MCP, and more",
       "source": {
         "github": "eminent337/aery-extensions/packs/full"
       }

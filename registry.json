@@ -204,6 +204,12 @@
       "source": "eminent337/aery-extensions",
       "file": "packs/full/agent-teams.ts",
       "type": "extension"
+    },
+    "swarm": {
+      "description": "Swarm orchestration — DAG-based multi-agent task pipelines with parallel execution and state management",
+      "source": "eminent337/aery-extensions/packs/swarm",
+      "file": "packs/swarm/extension.ts",
+      "type": "extension"
     }
   }
 }
